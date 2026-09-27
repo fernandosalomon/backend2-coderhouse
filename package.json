@@ -1,0 +1,19 @@
+{
+  "name": "backend2-coderhouse",
+  "version": "0.1.0",
+  "description": "Proyecto final del curso de Backend 2 de Coderhouse",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch src/app.js"
+  },
+  "keywords": [
+    "backend",
+    "express",
+    "nodejs"
+  ],
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1"
+  }
+}
