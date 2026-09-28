@@ -1,23 +1,23 @@
-import userModel from '../models/User.js'
+import UserModel from '../models/User.js'
 
-export default class Users{
+export default class UsersDAO{
      get = (params) =>{
-        return userModel.find(params);
+        return UserModel.find(params);
     }
 
     getBy = (params) =>{
-        return userModel.findOne(params);
+        return UserModel.findOne(params);
     }
 
     save = (doc) =>{
-        return userModel.create(doc);
+        return UserModel.create(doc);
     }
 
     update = (id,doc) =>{
-        return userModel.findByIdAndUpdate(id,{$set:doc})
+        return UserModel.findByIdAndUpdate(id,{$set:doc})
     }
 
     delete = (id) =>{
-        return userModel.findByIdAndDelete(id);
+        return UserModel.findByIdAndDelete(id);
     }
 }
