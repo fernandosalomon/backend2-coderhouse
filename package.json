@@ -2,9 +2,11 @@
   "name": "backend2-coderhouse",
   "version": "0.1.0",
   "description": "Proyecto final del curso de Backend 2 de Coderhouse",
+  "author": "Fernando F. Salomón",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch src/app.js"
+    "dev": "node --watch src/app.js",
+    "start": "node src/app.js"
   },
   "keywords": [
     "backend",
