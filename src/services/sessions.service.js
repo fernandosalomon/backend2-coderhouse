@@ -1,11 +1,8 @@
-import UserRepository from "../repositories/UserRepository.js";
-import UsersDAO from "../dao/Users.dao.js";
 import { isValidEmail } from "../utils/validators.js";
 import { hashPassword } from "../utils/hash.js";
 import UserDTO from "../dto/User.dto.js";
 import { AppError } from "../utils/customError.js";
-
-const Users = new UserRepository(new UsersDAO());
+import { userRepository } from "../repositories/index.js";
 
 export const createUser = async (userData) => {
   let { first_name, last_name, email, password } = userData;
@@ -25,13 +22,13 @@ export const createUser = async (userData) => {
     );
   }
 
-  const userExists = await Users.getUserByEmail(email);
+  const existingUser = await userRepository.getUserByEmail(email);
 
-  if (userExists == null) {
+  if (existingUser == null) {
     throw new AppError("El email ya está registrado", 409);
   }
 
-  const newUser = await Users.create({
+  const newUser = await userRepository.create({
     first_name,
     last_name,
     email: email.toLowerCase().trim(),

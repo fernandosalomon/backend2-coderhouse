@@ -1,244 +1,428 @@
 # Plataforma de Eventos e Inscripciones
+
 ### Proyecto del curso de Programación Backend II: Diseño y Arquitectura Backend de CoderHouse
 
-## 1. Descripción del proyecto
+### 1. Descripción del proyecto
 
-**Plataforma de Eventos e Inscripciones** es una API REST desarrollada con Node.js y Express, orientada a la gestión de cursos, capacitaciones y actividades de formación, permitiendo administrar los eventos formativos y las inscripciones de los participantes.
+Plataforma de Eventos e Inscripciones es una API REST desarrollada con Node.js y Express, orientada a la gestión de cursos, capacitaciones y actividades de formación, permitiendo administrar las actividades formativas y las inscripciones de los participantes.
 
-El proyecto se desarrolla en el marco de la materia **Backend II** y tiene como objetivo construir una aplicación backend escalable, organizada mediante una arquitectura por capas y preparada para incorporar progresivamente nuevas funcionalidades.
+El proyecto se desarrolla en el marco de la materia Backend II y tiene como objetivo construir una aplicación backend escalable, organizada mediante una arquitectura por capas y preparada para incorporar progresivamente nuevas funcionalidades relacionadas con la gestión de actividades de capacitación.
 
-Esta primera pre-entrega se centra en el refactor arquitectónico inicial y en la configuración de la infraestructura básica del servidor. Se establece la estructura de directorios, se separan las responsabilidades de la aplicación y se definen los primeros endpoints para verificar su funcionamiento.
+En esta segunda pre-entrega se implementa el primer flujo real de usuarios de la plataforma: el registro seguro de nuevos usuarios. Para ello se incorpora la persistencia de datos en MongoDB mediante Mongoose, la validación y normalización de los datos recibidos y el almacenamiento seguro de las contraseñas mediante bcrypt.
 
-## 2. Tecnologías utilizadas
+La arquitectura desarrollada en la primera entrega se mantiene y se extiende para incorporar la lógica correspondiente al registro de usuarios.
 
-* **Node.js:** entorno de ejecución de JavaScript.
-* **Express:** framework para el desarrollo de la API REST.
-* **ECMAScript Modules (ESM):** sistema de módulos mediante `import` y `export`.
-* **dotenv:** gestión de variables de entorno.
-* **MongoDB:** base de datos prevista para las próximas etapas del proyecto.
+### 2. Tecnologías utilizadas
+  
++ Node.js: entorno de ejecución de JavaScript.
++ Express: framework para el desarrollo de la API REST.
++ MongoDB: base de datos utilizada para la persistencia de usuarios.
++ Mongoose: ODM utilizado para interactuar con MongoDB.
++ bcrypt: librería utilizada para realizar el hash seguro de las contraseñas.
++ dotenv: gestión de variables de entorno.
 
-## 3. Arquitectura del proyecto
+### 3. Arquitectura del proyecto
 
-La aplicación utiliza una arquitectura organizada por capas, con el objetivo de separar las responsabilidades y facilitar el mantenimiento, las pruebas y la incorporación de nuevas funcionalidades.
+El proyecto utiliza una arquitectura organizada por capas, con el objetivo de separar responsabilidades y facilitar el mantenimiento, las pruebas y la incorporación de nuevas funcionalidades.
 
-La estructura inicial del proyecto es la siguiente:
+La estructura actual del proyecto es:
 
 ```text
 proyecto-eventos/
 ├── src/
-│   ├── app.js
-│   ├── server.js
-│   ├── config/
-│   ├── routes/
-│   │   ├── events.router.js
-│   │   ├── health.router.js
-│   │   └── sessions.router.js
-│   ├── controllers/
-│   │   ├── events.controller.js
-│   │   └── sessions.controller.js
-│   ├── services/
-│   ├── repositories/
-│   ├── dao/
-│   ├── models/
-│   │   ├── User.js
-│   │   └── Event.js
-│   ├── middlewares/
-│   └── utils/
-├── .env
+│ ├── app.js
+│ ├── server.js
+│ ├── config/
+│ │   ├── env.config.js
+│ │   └── mongodb.config.js
+│ ├── routes/
+│ │   ├── events.router.js
+│ │   ├── health.router.js
+│ │   └── sessions.router.js
+│ ├── controllers/
+│ │   ├── events.controller.js
+│ │   └── sessions.controller.js
+│ ├── services/
+│ │   └── sessions.service.js
+│ ├── repositories/
+│ │   ├── BaseRepository.js
+│ │   └── UserRepository.js
+│ ├── dao/
+│ │   └── Users.dao.js
+│ ├── models/
+│ │   ├── User.js
+│ │   └── Event.js
+│ ├── middlewares/
+│ └── utils/
+│ │   ├── customError.js
+│ │   ├── validators.js
+│     └── hash.js
 ├── .env.example
 ├── .gitignore
 ├── package.json
 └── README.md
 ```
 
-### Responsabilidades de las capas
+Responsabilidades de las capas
 
-| Directorio / archivo | Responsabilidad                                                      |
-| -------------------- | -------------------------------------------------------------------- |
-| `src/app.js`         | Configuración de Express y registro de los middlewares y las rutas.  |
-| `src/server.js`      | Inicialización del servidor HTTP y definición del puerto de escucha. |
-| `src/config/`        | Configuración de la aplicación y de los servicios externos.          |
-| `src/routes/`        | Definición de los endpoints y su vinculación con los controladores.  |
-| `src/controllers/`   | Recepción de solicitudes HTTP y construcción de las respuestas.      |
-| `src/services/`      | Implementación de la lógica de negocio.                              |
-| `src/repositories/`  | Abstracción del acceso a los datos.                                  |
-| `src/dao/`           | Implementación de las operaciones de acceso a datos.                 |
-| `src/models/`        | Definición de las entidades principales del dominio.                 |
-| `src/middlewares/`   | Funciones intermedias para el procesamiento de solicitudes.          |
-| `src/utils/`         | Funciones auxiliares reutilizables.                                  |
++ **src/app.js**: Configuración de Express, middlewares y rutas.
++ **src/server.js**: Inicialización del servidor HTTP y conexión con la base de datos.
++ **src/config/**: Configuración de la aplicación y servicios externos.
++ **src/routes/**: Definición de los endpoints y vinculación con los controladores.
++ **src/controllers/**: Recepción de las solicitudes HTTP y construcción de las respuestas.
++ **src/services/**: Implementación de la lógica de negocio.
++ **src/repositories/**: Abstracción del acceso a los datos.
++ **src/dao/**: Operaciones de acceso y persistencia de datos.
++ **src/models/**: Definición de los modelos de datos mediante Mongoose.
++ **src/middlewares/**: Funciones intermedias utilizadas durante el procesamiento de solicitudes.
++ **src/utils/**: Funciones auxiliares reutilizables, como el hash de contraseñas.
 
-La separación entre `app.js` y `server.js` permite mantener desacoplada la configuración de la aplicación del proceso de inicialización del servidor.
+Para el registro de usuarios, el flujo de la información sigue la siguiente estructura:
 
-## 4. Requisitos previos
+```text
+Request
+│
+▼
+Route
+│
+▼
+Controller
+│
+▼
+Service
+│
+▼
+Repository
+│
+▼
+DAO
+│
+▼
+Mongoose Model
+│
+▼
+MongoDB
+```
 
-Para ejecutar el proyecto se requiere:
+La lógica de negocio no se concentra en las rutas ni en los controladores, manteniendo la separación de responsabilidades establecida en la primera entrega.
 
-* Node.js.
-* npm, incluido con Node.js.
-* Git.
+### 4. Modelo UserModel
 
-MongoDB se utilizará en las siguientes etapas, cuando se incorpore la persistencia de datos.
+El modelo UserModel representa a los usuarios registrados en la plataforma.
 
-## 5. Instalación
+Cuenta con los siguientes campos:
+
++ **first_name**: Nombre del usuario.
++ **last_name**: Apellido del usuario.
++ **email**: Dirección de correo electrónico.
++ **password**: Contraseña almacenada mediante un hash de bcrypt.
++ **role**: Rol del usuario dentro de la plataforma.
+
+El campo role utiliza *user* como valor predeterminado y admite los siguientes valores:
+
++ user
++ organizer
++ admin
+
+El rol no puede ser definido ni modificado mediante el body del registro público. Todo usuario registrado mediante este endpoint obtiene inicialmente el rol *user*
+
+Los roles *organizer* y *admin* quedan reservados para mecanismos de gestión y autorización que serán implementados en etapas posteriores.
+
+### 5. Registro de usuarios 
+
+**POST /api/sessions/register**
+
+Permite registrar un nuevo usuario en la plataforma.
+
+El endpoint realiza las siguientes operaciones:
+
++ Verifica que estén presentes los campos obligatorios.
++ Valida el formato del email.
++ Valida la longitud mínima de la contraseña.
++ Normaliza el email mediante trim y lowercase.
++ Comprueba que no exista otro usuario con el mismo email.
++ Genera un hash de la contraseña utilizando bcrypt.
++ Persiste el usuario en MongoDB.
++ Devuelve los datos del usuario registrado sin incluir la contraseña.
+
+Body esperado
+
+```json
+{
+  "first_name": "Ana",
+  "last_name": "Pérez",
+  "email": "Ana@Mail.com ",
+  "password": "Secreta123"
+}
+``` 
+
+El email recibido será normalizado antes de almacenarse:
+
+```text
+Ana@Mail.com
+↓
+ana@mail.com
+```
+
+#### Respuesta exitosa
+
+**HTTP 201 - Created**
+```json
+{
+  "status": "success",
+  "payload": {
+    "id": "665f2a...",
+    "first_name": "Ana",
+    "last_name": "Pérez",
+    "email": "ana@mail.com",
+    "role": "user"
+  }
+}
+```
+La respuesta no contiene el campo password.
+
+La contraseña tampoco se almacena en texto plano en MongoDB. Se almacena únicamente su hash generado mediante bcrypt.
+
+**Campos obligatorios**
+
+Los siguientes campos deben estar presentes en la solicitud:
+
++ first_name
++ last_name
++ email
++ password
+
+El campo *role* no forma parte de los datos permitidos para establecer el rol durante el registro público.
+
+#### Campos faltantes o email inválido
+
+**HTTP 400 - Bad Request**
+
+Ejemplo de respuesta:
+```json
+{
+  "status": "error",
+  "message": "Faltan campos obligatorios"
+}
+```
+También se devuelve un error 400 cuando el email no cumple con el formato esperado o cuando la contraseña no alcanza la longitud mínima establecida.
+
+#### Email ya registrado
+
+**HTTP 409 - Conflict**
+
+Ejemplo de respuesta:
+```json
+{
+  "status": "error",
+  "message": "El email ya está registrado"
+}
+```
+No se permite crear más de un usuario utilizando la misma dirección de email.
+
+### 6. Seguridad de contraseñas
+
+Las contraseñas de los usuarios nunca se almacenan en texto plano.
+
+El proceso implementado es:
+
+```text
+Contraseña recibida
+│
+▼
+bcrypt
+│
+▼
+Hash de contraseña
+│
+▼
+MongoDB
+```
+
+La funcionalidad de hash se encuentra encapsulada en un helper reutilizable dentro de `src/utils/hash.js`
+
+De esta forma, la lógica relacionada con bcrypt no se encuentra directamente en las rutas ni en los controladores y puede reutilizarse posteriormente para el proceso de autenticación.
+
+Además, el campo password no se incluye en la respuesta HTTP del registro, evitando exponer tanto la contraseña original como su hash.
+
+### 7. MongoDB
+
+La persistencia de los usuarios se realiza utilizando MongoDB y Mongoose.
+
+La URL de conexión se configura mediante la variable de entorno:
+
+MONGO_URL=mongodb://127.0.0.1:27017/eventos
+
+La aplicación utiliza el modelo UserModel de Mongoose para interactuar con la colección correspondiente.
+
+### 8. Configuración de variables de entorno
+
+El proyecto utiliza dotenv para cargar las variables de entorno desde .env.
+
+Crear el archivo de configuración a partir de la plantilla:
+
+´cp .env.example .env´
+
+El archivo .env.example contiene:
+
+PORT=3000
+NODE_ENV=development
+MONGO_URL=mongodb://127.0.0.1:27017/eventos
+
+##### Descripción de las variables
+
+**PORT**: Puerto en el que se ejecutará el servidor.
+**NODE_ENV** Entorno de ejecución de la aplicación.
+**MONGO_URI**: URL de conexión a la base de datos MongoDB.
+
+El repositorio incluye .env.example como plantilla de configuración.
+
+### 9. Instalación
 
 Clonar el repositorio:
 
-```bash
-git clone https://github.com/fernandosalomon/backend2-coderhouse.git
-```
+`git clone https://github.com/USUARIO/proyecto-eventos.git`
 
-Ingresar al directorio del proyecto:
+Ingresar al directorio:
 
-```bash
-cd backend2-coderhouse
-```
+`cd proyecto-eventos`
 
 Instalar las dependencias:
 
-```bash
-npm install
-```
+`npm install`
 
-## 6. Configuración de variables de entorno
+Configurar las variables de entorno:
 
-El proyecto utiliza `dotenv` para cargar las variables de entorno desde un archivo `.env`.
+`cp .env.example .env`
 
-Crear el archivo a partir de la plantilla incluida en el repositorio:
+Verificar que MongoDB se encuentre disponible y que MONGO_URI apunte a la instancia correspondiente.
 
-```bash
-cp .env.example .env
-```
+### 10. Ejecución
 
-Configurar las siguientes variables:
+Iniciar el servidor:
 
-```dotenv
-PORT=8080
-NODE_ENV=development
-MONGO_URL=
-JWT_SECRET=
-```
+`npm start`
 
-### Descripción de las variables
+Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 
-| Variable     | Descripción                                              |
-| ------------ | -------------------------------------------------------- |
-| `PORT`       | Puerto en el que se ejecutará el servidor.               |
-| `NODE_ENV`   | Entorno de ejecución de la aplicación.                   |
-| `MONGO_URL`  | URL de conexión a MongoDB, prevista para futuras etapas. |
-| `JWT_SECRET` | Clave secreta que se utilizará para firmar tokens JWT.   |
+`npm run dev`
 
-**Importante:** el archivo `.env` contiene configuración local y no debe subirse al repositorio. Para compartir la configuración necesaria se incluye `.env.example`, sin credenciales ni secretos reales.
+El servidor utilizará el puerto definido en la variable de entorno PORT.
 
-## 7. Ejecución
+### 11. Endpoints disponibles
 
-Iniciar el servidor con el comando:
+#### Health check
 
-```bash
-npm start
-```
+**GET /api/health**
 
-Para ejecutar el proyecto en modo desarrollo, si se encuentra configurado el script correspondiente:
+Permite comprobar que el servidor se encuentra activo.
 
-```bash
-npm run dev
-```
-
-El servidor utilizará el puerto definido mediante la variable de entorno `PORT`.
-
-Si no se especifica un puerto, se utilizará el valor predeterminado definido en la aplicación.
-
-## 8. Endpoints disponibles
-
-En esta primera etapa se implementan los endpoints básicos para verificar el funcionamiento del servidor y establecer la estructura inicial de los recursos principales.
-
-### 8.1. Health check
-
-**Método:** `GET`
-
-**Ruta:** `/api/health`
-
-Permite verificar que el servidor se encuentra activo.
-
-Respuesta exitosa — `200 OK`:
-
+Respuesta de ejemplo:
 ```json
 {
   "status": "ok",
   "message": "Servidor activo"
 }
 ```
+#### Listado de eventos
 
-### 8.2. Listado de eventos
+**GET /api/events**
 
-**Método:** `GET`
+Devuelve el listado de eventos disponibles.
 
-**Ruta:** `/api/events`
-
-Devuelve el listado de eventos. En esta etapa inicial, el endpoint responde con una lista vacía, ya que todavía no se implementaron la persistencia ni la lógica de gestión de eventos.
-
-Respuesta exitosa — `200 OK`:
-
+En esta etapa inicial todavía no se implementó la gestión completa de eventos, por lo que puede devolver una lista vacía:
 ```json
 {
   "status": "success",
   "payload": []
 }
 ```
+#### Registro de usuarios
 
-### 8.3. Rutas de sesiones
+**POST /api/sessions/register**
 
-Se establece la estructura inicial del recurso `sessions`, con su correspondiente archivo de rutas y controlador.
+Registra un nuevo usuario validando y normalizando sus datos y almacenando la contraseña de forma segura.
 
-En esta pre-entrega no se implementan operaciones de autenticación ni gestión de sesiones. El recurso queda preparado para incorporar estas funcionalidades en las siguientes etapas.
+### 12. Pruebas del registro
 
-## 9. Modelos iniciales
+#### 1. Registro exitoso
+##### Enviar un usuario con todos los campos válidos.
 
-Se incluyen los archivos base correspondientes a las entidades principales del sistema.
+Resultado esperado:
 
-### User
++ HTTP **201**.
++ Usuario almacenado en MongoDB.
++ Email normalizado.
++ Rol establecido como user.
++ Contraseña almacenada mediante hash.
++ Contraseña ausente en la respuesta. 
 
-Representa a los usuarios de la plataforma.
+#### 2. Campos faltantes
 
-Se prevé incorporar campos como:
+##### Enviar una solicitud sin uno o más campos obligatorios.
 
-* `firstname`: nombre del usuario.
-* `lastname`: apellido del usuario.
-* `email`: dirección de correo electrónico.
-* `password`: contraseña almacenada mediante un mecanismo de hash.
-* `role`: rol del usuario dentro de la plataforma.
+Resultado esperado:
 
-### Event
++ HTTP 400.
++ Mensaje indicando que faltan campos obligatorios. 
 
-Representa los eventos disponibles en la plataforma.
+Captura de Postman:
+![alt text](/public/img/image.png)
 
-Se prevé incorporar campos como:
+Captura de MongoDB:
+![alt text](/public/img/image-1.png)
 
-* `title`: título del evento.
-* `description`: descripción del evento.
-* `date`: fecha de realización.
-* `location`: ubicación del evento.
-* `capacity`: capacidad máxima de asistentes.
-* `price`: precio del evento.
+#### 3. Email inválido
 
-Estos campos constituyen una definición inicial del dominio y podrán ampliarse durante las siguientes etapas del desarrollo.
+Enviar un email que no cumpla con el formato esperado.
 
-## 10. Próximas etapas
+Resultado esperado:
 
-La arquitectura inicial permitirá incorporar progresivamente las siguientes funcionalidades:
++ HTTP 400.
++ Usuario no almacenado. 
 
-1. Conexión con MongoDB y persistencia de datos.
-2. Registro de usuarios y almacenamiento seguro de contraseñas.
-3. Inicio de sesión y autenticación mediante JWT.
-4. Gestión de sesiones, cookies y Passport.
-5. Implementación de roles y autorización.
-6. Operaciones CRUD para eventos.
-7. Inscripciones, tickets y control de cupos.
-8. Validaciones, manejo centralizado de errores y notificaciones.
+Captura de Postman:
+![alt text](/public/img/image-2.png)
 
-## 11. Alcance de la pre-entrega N.º 1
+#### 4. Email ya registrado
 
-Esta entrega contempla exclusivamente la configuración inicial del servidor Express, la organización del código en capas, la configuración mediante variables de entorno, los modelos base y la definición de los endpoints iniciales.
+Intentar registrar nuevamente un email existente.
 
-No se incluyen todavía la autenticación, la persistencia de datos, la gestión completa de eventos ni las inscripciones.
+Resultado esperado:
 
-El objetivo es establecer una base arquitectónica clara, modular y extensible sobre la que se desarrollarán las funcionalidades de la Plataforma de Eventos e Inscripciones en las próximas entregas.
++ HTTP 409.
++ No se crea un segundo usuario. 
+
+Captura de Postman:
+![alt text](/public/img/image-3.png)
+
+### 12.  Seguridad y buenas prácticas
+
+En esta etapa se aplican las siguientes medidas:
+
++ Las contraseñas no se almacenan en texto plano.
++ Se utiliza bcrypt para generar el hash.
++ El email se normaliza antes de persistirlo.
++ Se evita el registro de emails duplicados.
++ El rol no puede ser establecido desde el registro público.
++ La contraseña no se devuelve en las respuestas HTTP.
++ Las credenciales y variables sensibles se mantienen fuera del repositorio.
++ La lógica de negocio se mantiene separada de las rutas.
++ El hash de contraseñas se encuentra encapsulado en un helper reutilizable. 14. Próximas etapas
+
+Esta entrega incorpora el primer flujo funcional de usuarios de la Plataforma de Eventos e Inscripciones.
+
+Sobre la arquitectura establecida en la Pre-entrega N.º 1 se agrega:
+
++ Modelo User persistente mediante Mongoose.
++ Conexión con MongoDB.
++ Endpoint POST /api/sessions/register.
++ Validación de datos.
++ Normalización de emails.
++ Detección de usuarios duplicados.
++ Hash de contraseñas mediante bcrypt.
++ Helper reutilizable para el hash.
++ Protección del campo role.
++ Exclusión de la contraseña de las respuestas.
+
+La autenticación y autorización todavía no forman parte de esta entrega y serán desarrolladas en etapas posteriores.
