@@ -305,7 +305,7 @@ La persistencia de los usuarios se realiza utilizando MongoDB y Mongoose.
 
 La URL de conexión se configura mediante la variable de entorno:
 
-MONGO_URL=mongodb://127.0.0.1:27017/eventos
+MONGO_URI=mongodb://127.0.0.1:27017/eventos
 
 La aplicación utiliza el modelo UserModel de Mongoose para interactuar con la colección correspondiente.
 

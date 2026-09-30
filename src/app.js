@@ -5,11 +5,18 @@ import eventsRouter from "./routes/events.router.js";
 import sessionsRouter from "./routes/sessions.router.js";
 import cookieParser from "cookie-parser";
 import { COOKIE_SECRET } from "./config/env.config.js";
+import passport from "passport";
+import { initPassport } from "./config/passport.config.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser(COOKIE_SECRET));
+app.use(passport.initialize());
+initPassport();
 
 app.use("/api/health", healthRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/sessions", sessionsRouter);
+
+app.use(errorHandler);
