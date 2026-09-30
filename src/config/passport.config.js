@@ -13,6 +13,8 @@ const getToken = (req) => {
 
   if (req.cookies.currentUser) {
     token = req.cookies.currentUser;
+  } else {
+    throw new customError("No autenticado", 401);
   }
 
   return token;

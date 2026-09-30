@@ -1,23 +1,13 @@
-import * as userService from "../services/sessions.service.js";
 import jwt from "jsonwebtoken";
 import { JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV } from "../config/env.config.js";
 
 export const register = async (req, res) => {
-  // const userData = req.body;
-  try {
-    // const newUser = await userService.createUser(userData);
-    const newUser = req.user;
-    res.status(201).json({ status: "success", payload: newUser });
-  } catch (error) {
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ status: "error", message: error.message });
-  }
+    const user = req.user;
+    res.status(201).json({ status: "success", payload: user });
 };
 
 export const login = async (req, res) => {
-  //const userData = req.body;
   try {
-    //const user = await userService.loginUser(userData);
     const user = req.user;
     const token = jwt.sign(
       {
@@ -38,8 +28,7 @@ export const login = async (req, res) => {
 
     res.status(200).json({ status: "success", message: "Login correcto" });
   } catch (error) {
-    const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ status: "error", message: error.message });
+    res.status(500).json({ status: "error", message: "Internal Server Error" });
   }
 };
 

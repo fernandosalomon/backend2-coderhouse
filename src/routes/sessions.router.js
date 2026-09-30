@@ -5,31 +5,25 @@ import {
   getCurrentUser,
   logoutUser,
 } from "../controllers/sessions.controller.js";
-import auth from "../middlewares/auth.middleware.js";
 import passport from "passport";
 
 const router = Router();
 
 router.post(
   "/register",
-  passport.authenticate("register", {
-    session: false,
-    failureRedirect: "/api/errors/authError",
-  }),
-  register,
+  passport.authenticate("register", { session: false }),
+  register
 );
+
 router.post(
   "/login",
-  passport.authenticate("login", {
-    session: false,
-  }),
+  passport.authenticate("login", { session: false }),
   login,
 );
+
 router.get(
   "/current",
-  passport.authenticate("current", {
-    session: false,
-  }),
+  passport.authenticate("current", { session: false }),
   getCurrentUser,
 );
 router.post("/logout", logoutUser);
