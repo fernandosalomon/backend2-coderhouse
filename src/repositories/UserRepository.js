@@ -5,7 +5,7 @@ export default class UserRepository extends BaseRepository{
         super(dao);
     }
     
-    getUserByEmail = (email) =>{
+    getUserByEmail = (email) => {
         return this.getBy({email});
     }
     

@@ -22,8 +22,10 @@ export const createUser = async (userData) => {
     );
   }
 
-  const existingUser = await userRepository.getUserByEmail(email);
-
+  const existingUser = await userRepository.getUserByEmail(
+    email.toLowerCase().trim(),
+  );
+  
   if (existingUser != null) {
     throw new AppError("El email ya está registrado", 409);
   }
