@@ -1,5 +1,5 @@
 import { isValidEmail } from "../utils/validators.js";
-import { hashPassword } from "../utils/hash.js";
+import { checkPassword, hashPassword } from "../utils/hash.js";
 import UserDTO from "../dto/User.dto.js";
 import { AppError } from "../utils/customError.js";
 import { userRepository } from "../repositories/index.js";
@@ -37,4 +37,26 @@ export const createUser = async (userData) => {
   });
 
   return new UserDTO(newUser);
+};
+
+export const loginUser = async (userData) => {
+  let { email, password } = userData;
+
+  if (!email || !password) {
+    throw new AppError("Credenciales inválidas", 401);
+  }
+
+  const user = await userRepository.getUserByEmail(email.toLowerCase().trim());
+
+  if (user == null) {
+    throw new AppError("Credenciales inválidas", 401);
+  }
+
+  const isPasswordValid = checkPassword(password, user.password);
+
+  if (!isPasswordValid) {
+    throw new AppError("Credenciales inválidas", 401);
+  }
+
+  return new UserDTO(user);
 };

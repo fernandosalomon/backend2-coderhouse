@@ -8,9 +8,45 @@ Plataforma de Eventos e Inscripciones es una API REST desarrollada con Node.js y
 
 El proyecto se desarrolla en el marco de la materia Backend II y tiene como objetivo construir una aplicación backend escalable, organizada mediante una arquitectura por capas y preparada para incorporar progresivamente nuevas funcionalidades relacionadas con la gestión de actividades de capacitación.
 
-En esta segunda pre-entrega se implementa el primer flujo real de usuarios de la plataforma: el registro seguro de nuevos usuarios. Para ello se incorpora la persistencia de datos en MongoDB mediante Mongoose, la validación y normalización de los datos recibidos y el almacenamiento seguro de las contraseñas mediante bcrypt.
+En esta tercera pre-entrega se incorpora el sistema de autenticación de usuarios. Sobre la funcionalidad de registro desarrollada en la entrega anterior, se implementa el inicio de sesión mediante JWT, el almacenamiento del token en una cookie HTTP Only, una ruta protegida para consultar el usuario autenticado y el cierre de sesión.
 
-La arquitectura desarrollada en la primera entrega se mantiene y se extiende para incorporar la lógica correspondiente al registro de usuarios.
+El flujo de autenticación implementado es:
+```text
+Registro
+   │
+   ▼
+POST /api/sessions/register
+   │
+   ▼
+Usuario almacenado en MongoDB
+   │
+   │
+   ▼
+Login
+   │
+   ▼
+POST /api/sessions/login
+   │
+   ▼
+Validación de credenciales
+   │
+   ▼
+Generación de JWT
+   │
+   ▼
+Cookie currentUser
+   │
+   ▼
+GET /api/sessions/current
+   │
+   ▼
+Middleware de autenticación
+   │
+   ▼
+Usuario autenticado
+```
+
+El proyecto queda preparado para incorporar posteriormente autorización por roles, gestión de cursos y capacitaciones, inscripciones, control de cupos y otras funcionalidades de la plataforma.
 
 ### 2. Tecnologías utilizadas
   
@@ -20,6 +56,8 @@ La arquitectura desarrollada en la primera entrega se mantiene y se extiende par
 + Mongoose: ODM utilizado para interactuar con MongoDB.
 + bcrypt: librería utilizada para realizar el hash seguro de las contraseñas.
 + dotenv: gestión de variables de entorno.
++ jsonwebtoken: librería utilizada para generar y verificar tokens JWT.
++ cookie-parser: middleware utilizado para gestionar cookies HTTP.
 
 ### 3. Arquitectura del proyecto
 
@@ -45,6 +83,7 @@ proyecto-eventos/
 │ ├── services/
 │ │   └── sessions.service.js
 │ ├── repositories/
+│ │   ├── index.js
 │ │   ├── BaseRepository.js
 │ │   └── UserRepository.js
 │ ├── dao/
@@ -53,6 +92,7 @@ proyecto-eventos/
 │ │   ├── User.js
 │ │   └── Event.js
 │ ├── middlewares/
+│ │   └── auth.middleware.js
 │ └── utils/
 │ │   ├── customError.js
 │ │   ├── validators.js
@@ -90,6 +130,8 @@ Controller
 │
 ▼
 Service
+│ 
+├──► Hash / JWT utilities
 │
 ▼
 Repository
@@ -102,6 +144,18 @@ Mongoose Model
 │
 ▼
 MongoDB
+```
+
+Para las rutas protegidas se incorpora además el middleware:
+```text
+Request
+   │
+   ▼
+auth.middleware.js
+   │
+   ├── Token válido ──► req.user ──► Controller
+   │
+   └── Token inválido ──► 401
 ```
 
 La lógica de negocio no se concentra en las rutas ni en los controladores, manteniendo la separación de responsabilidades establecida en la primera entrega.
@@ -255,7 +309,172 @@ MONGO_URL=mongodb://127.0.0.1:27017/eventos
 
 La aplicación utiliza el modelo UserModel de Mongoose para interactuar con la colección correspondiente.
 
-### 8. Configuración de variables de entorno
+### 8. Login de usuarios
+**POST /api/sessions/login**
+
+Permite autenticar a un usuario previamente registrado.
+
+El endpoint:
+
++ Valida la presencia de email y password.
++ Busca el usuario por email.
++ Compara la contraseña recibida con el hash almacenado mediante bcrypt.
++ Si las credenciales son incorrectas, devuelve un mensaje genérico.
++ Si las credenciales son correctas, genera un JWT.
++ Almacena el JWT en la cookie currentUser.
++ Devuelve una respuesta indicando que el login fue exitoso.
+
+Request:
+```json
+{
+  "email": "ana@mail.com",
+  "password": "Secreta123"
+}
+```
+
+**Response 200 - OK**
+```json
+{
+  "status": "success",
+  "message": "Login correcto"
+}
+```
+
+Además de la respuesta JSON, el servidor establece la cookie `currentUser`
+
+La cookie contiene el JWT generado para el usuario autenticado.
+
+**Credenciales inválidas**
+
+Si el email no existe o la contraseña no coincide, el endpoint responde siempre con el mismo mensaje.
+
+**HTTP 401 - Unauthorized**
+```json
+{
+  "status": "error",
+  "message": "Credenciales inválidas"
+}
+```
+No se especifica si el problema corresponde al email o a la contraseña. Esto evita proporcionar información que permita determinar qué usuarios se encuentran registrados.
+
+### 9. JWT
+
+Los tokens de autenticación se generan mediante jsonwebtoken.
+
+La lógica relacionada con JWT se encuentra centralizada en `src/utils/jwt.js`
+
+El token contiene únicamente la información mínima necesaria para identificar al usuario:
+```json
+{
+  "id": "665f2a...",
+  "email": "ana@mail.com",
+  "role": "user"
+}
+```
+El JWT se firma utilizando la variable de entorno:
+
+JWT_SECRET=change_this_secret
+
+La duración del token es configurable mediante:
+
+JWT_EXPIRES_IN=1h
+
+El secreto utilizado para firmar el token no se encuentra hardcodeado en el código fuente.
+
+El JWT no contiene la contraseña del usuario.
+
+### 10. Cookie de autenticación
+
+El JWT se almacena en una cookie denominada `currentUser`
+
+La cookie se configura con las siguientes propiedades:
+
++ **httpOnly**:true
++ **sameSite**:lax
++ **maxAge**:3600000 ms
++ **secure**:true (únicamente en producción)
+
+El uso de httpOnly evita que la cookie pueda ser accedida directamente mediante JavaScript ejecutado en el navegador.
+
+La configuración de secure permite utilizar HTTP durante el desarrollo local y exigir HTTPS en producción.
+
+### 11. Ruta protegida: usuario actual
+**GET /api/sessions/current**
+
+Permite obtener la información básica del usuario actualmente autenticado.
+
+La ruta está protegida mediante el middleware: `src/middlewares/auth.middleware.js`
+
+El middleware:
+
++ Obtiene la cookie currentUser.
++ Extrae el JWT.
++ Verifica la firma del token.
++ Comprueba su validez y expiración.
++ Guarda el payload decodificado en: `req.user`
++ Permite continuar con el controlador.
+
+Request: No requiere un body.
+
+La solicitud debe incluir la cookie de autenticación: `currentUser=<JWT>`
+
+**Response 200 - OK**
+```json
+{
+  "status": "success",
+  "payload": {
+    "id": "665f2a...",
+    "email": "ana@mail.com",
+    "role": "user"
+  }
+}
+```
+La respuesta no contiene la contraseña.
+
+**Sin autenticación**
+
+Si la solicitud no contiene la cookie:
+
+**HTTP 401 - Unauthorized**
+```json
+{
+  "status": "error",
+  "message": "No autenticado"
+}
+```
+
+El mismo código de respuesta se utiliza cuando el token es inválido o se encuentra expirado.
+
+### 12. Logout
+**POST /api/sessions/logout**
+
+Permite cerrar la sesión del usuario.
+
+El endpoint elimina la cookie: `currentUser`
+
+Request: No requiere body.
+
+**Response 200 - OK**
+```json
+{
+  "status": "success",
+  "message": "Sesión cerrada"
+}
+```
+
+Después de ejecutar el logout, una solicitud posterior a **GET /api/sessions/current** debe responder: **401 - Unauthorized**
+
+### 13. Endpoints disponibles
+|Método |	Ruta  | Descripción |	Autenticación |
+|-------|-------|-------------|---------------|
+|GET  | /api/health | Verifica que el servidor esté activo. | **No**  |
+|GET  | /api/events | Obtiene los eventos disponibles.  | **No**  |
+|POST | /api/sessions/register  | Registra un nuevo usuario.  | **No**  |
+|POST | /api/sessions/login | Autentica un usuario y genera la cookie JWT.  | **No**  |
+|GET  | /api/sessions/current | Obtiene el usuario autenticado. | **Sí** |
+|POST | /api/sessions/logout  | Cierra la sesión y elimina la cookie. | **No**  |
+
+### 14. Configuración de variables de entorno
 
 El proyecto utiliza dotenv para cargar las variables de entorno desde .env.
 
@@ -265,19 +484,25 @@ Crear el archivo de configuración a partir de la plantilla:
 
 El archivo .env.example contiene:
 
-PORT=3000
-NODE_ENV=development
-MONGO_URL=mongodb://127.0.0.1:27017/eventos
+PORT=
+NODE_ENV=
+MONGO_URI=
+JWT_SECRET=
+JWT_EXPIRES_IN=
+COOKIE_SECRET=
 
 ##### Descripción de las variables
 
 **PORT**: Puerto en el que se ejecutará el servidor.
 **NODE_ENV** Entorno de ejecución de la aplicación.
 **MONGO_URI**: URL de conexión a la base de datos MongoDB.
+**JWT_SECRET**:Secreto utilizado para firmar y verificar los JWT.
+**JWT_EXPIRES_IN**:Tiempo de expiración de los JWT.
+**COOKIE_SECRET**:Secreto utilizado para firmar y verificar las cookies.
 
 El repositorio incluye .env.example como plantilla de configuración.
 
-### 9. Instalación
+### 15. Instalación
 
 Clonar el repositorio:
 
@@ -297,7 +522,7 @@ Configurar las variables de entorno:
 
 Verificar que MongoDB se encuentre disponible y que MONGO_URI apunte a la instancia correspondiente.
 
-### 10. Ejecución
+### 16. Ejecución
 
 Iniciar el servidor:
 
@@ -308,40 +533,6 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 `npm run dev`
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
-
-### 11. Endpoints disponibles
-
-#### Health check
-
-**GET /api/health**
-
-Permite comprobar que el servidor se encuentra activo.
-
-Respuesta de ejemplo:
-```json
-{
-  "status": "ok",
-  "message": "Servidor activo"
-}
-```
-#### Listado de eventos
-
-**GET /api/events**
-
-Devuelve el listado de eventos disponibles.
-
-En esta etapa inicial todavía no se implementó la gestión completa de eventos, por lo que puede devolver una lista vacía:
-```json
-{
-  "status": "success",
-  "payload": []
-}
-```
-#### Registro de usuarios
-
-**POST /api/sessions/register**
-
-Registra un nuevo usuario validando y normalizando sus datos y almacenando la contraseña de forma segura.
 
 ### 12. Pruebas del registro
 
@@ -367,10 +558,10 @@ Resultado esperado:
 + Mensaje indicando que faltan campos obligatorios. 
 
 Captura de Postman:
-![alt text](/public/img/image.png)
+![alt text](/public/img/001.png)
 
 Captura de MongoDB:
-![alt text](/public/img/image-1.png)
+![alt text](/public/img/002.png)
 
 #### 3. Email inválido
 
@@ -382,7 +573,7 @@ Resultado esperado:
 + Usuario no almacenado. 
 
 Captura de Postman:
-![alt text](/public/img/image-2.png)
+![alt text](/public/img/003.png)
 
 #### 4. Email ya registrado
 
@@ -394,35 +585,93 @@ Resultado esperado:
 + No se crea un segundo usuario. 
 
 Captura de Postman:
-![alt text](/public/img/image-3.png)
+![alt text](/public/img/004.png)
 
-### 12.  Seguridad y buenas prácticas
+### 13. Pruebas del login
 
-En esta etapa se aplican las siguientes medidas:
+#### 1. Login exitoso
 
-+ Las contraseñas no se almacenan en texto plano.
-+ Se utiliza bcrypt para generar el hash.
-+ El email se normaliza antes de persistirlo.
-+ Se evita el registro de emails duplicados.
-+ El rol no puede ser establecido desde el registro público.
-+ La contraseña no se devuelve en las respuestas HTTP.
-+ Las credenciales y variables sensibles se mantienen fuera del repositorio.
-+ La lógica de negocio se mantiene separada de las rutas.
-+ El hash de contraseñas se encuentra encapsulado en un helper reutilizable. 14. Próximas etapas
+```json
+{
+  "email": "Ana@Mail.com ", 
+  "password": "Secreta123" 
+}
+```
+Captura de Postman:
+![alt text](/public/img/007.png)
 
-Esta entrega incorpora el primer flujo funcional de usuarios de la Plataforma de Eventos e Inscripciones.
+#### 2. /current de un usuario autenticado
 
-Sobre la arquitectura establecida en la Pre-entrega N.º 1 se agrega:
+Captura de Postman:
+![alt text](/public/img/008.png)
 
-+ Modelo User persistente mediante Mongoose.
-+ Conexión con MongoDB.
-+ Endpoint POST /api/sessions/register.
+#### 3. Login con email inexistente
+
+Request:
+```json
+{
+  "email": "noexiste@mail.com",
+  "password": "Secreta123"
+}
+```
+
+![alt text](/public/img/010.png)
+
+#### 4. Login con contraseña incorrecta
+
+Enviar un email registrado junto con una contraseña incorrecta.
+
+![alt text](/public/img/005.png)
+
+#### 5. /current sin cookie
+
+**401 - Unauthorized**
+![alt text](/public/img/006.png)
+
+### 14. Pruebas de logout
+Captura de Postman:
+![alt text](/public/img/009.png)
+
+
+### 15.  Próximas etapas
+
+La arquitectura implementada permite continuar desarrollando la plataforma sobre la misma base.
+
+Entre las próximas funcionalidades se encuentran:
+
++ Autorización basada en roles.
++ Gestión de usuarios.
++ Creación y administración de cursos y capacitaciones.
++ CRUD de eventos.
++ Inscripciones de participantes.
++ Control de cupos.
++ Gestión de tickets.
++ Middleware de autorización.
++ Integración de Passport.
++ Notificaciones.
+
+### 16. Alcance de la Pre-entrega N.º 3
+
+Esta entrega incorpora el sistema de autenticación sobre la base arquitectónica desarrollada en las pre-entregas anteriores.
+
+Las funcionalidades implementadas son:
+
++ Registro seguro de usuarios.
++ Persistencia de usuarios en MongoDB.
 + Validación de datos.
 + Normalización de emails.
-+ Detección de usuarios duplicados.
 + Hash de contraseñas mediante bcrypt.
-+ Helper reutilizable para el hash.
-+ Protección del campo role.
-+ Exclusión de la contraseña de las respuestas.
-
-La autenticación y autorización todavía no forman parte de esta entrega y serán desarrolladas en etapas posteriores.
++ Prevención de emails duplicados.
++ Login de usuarios.
++ Comparación segura de contraseñas.
++ Generación de JWT.
++ Payload JWT con id, email y role.
++ Expiración configurable del JWT.
++ Cookie de autenticación currentUser.
++ Cookie HttpOnly.
++ Middleware de autenticación.
++ Ruta protegida /api/sessions/current.
++ Logout mediante eliminación de la cookie.
++ Manejo de credenciales inválidas mediante mensajes genéricos.
++ Configuración mediante variables de entorno.
++ Documentación de los endpoints.
