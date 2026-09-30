@@ -24,7 +24,7 @@ export const createUser = async (userData) => {
 
   const existingUser = await userRepository.getUserByEmail(email);
 
-  if (existingUser == null) {
+  if (existingUser != null) {
     throw new AppError("El email ya está registrado", 409);
   }
 
