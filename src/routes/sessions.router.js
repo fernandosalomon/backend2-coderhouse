@@ -5,13 +5,27 @@ import {
   getCurrentUser,
   logoutUser,
 } from "../controllers/sessions.controller.js";
-import auth from "../middlewares/auth.middleware.js";
+import passport from "passport";
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
-router.get("/current", auth, getCurrentUser);
-router.post("/logout", auth, logoutUser);
+router.post(
+  "/register",
+  passport.authenticate("register", { session: false }),
+  register
+);
+
+router.post(
+  "/login",
+  passport.authenticate("login", { session: false }),
+  login,
+);
+
+router.get(
+  "/current",
+  passport.authenticate("current", { session: false }),
+  getCurrentUser,
+);
+router.post("/logout", logoutUser);
 
 export default router;
