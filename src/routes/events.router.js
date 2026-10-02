@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getEvents } from "../controllers/events.controller.js";
-import { auth } from "../middlewares/auth.js";
+import { authorize } from "../middlewares/authorize.middleware.js";
 import passport from "passport";
 
 const router = Router();
@@ -8,7 +8,7 @@ const router = Router();
 router.get(
   "/",
   passport.authenticate("current", { session: false }),
-  auth("organizer", "admin"),
+  authorize("organizer", "admin"),
   getEvents,
 );
 
