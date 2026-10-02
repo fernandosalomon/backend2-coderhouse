@@ -2,11 +2,11 @@ import EventModel from "../models/Event.js";
 
 export default class EventsDAO {
   get = (params) => {
-    return EventModel.find(params);
+    return EventModel.find(params).lean();
   };
 
   getBy = (params) => {
-    return EventModel.findOne(params);
+    return EventModel.findOne(params).lean();
   };
 
   save = (doc) => {

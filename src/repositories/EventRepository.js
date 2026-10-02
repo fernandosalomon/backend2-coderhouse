@@ -4,4 +4,8 @@ export default class EventRepository extends BaseRepository {
   constructor(dao) {
     super(dao);
   }
+
+  getById(eid) {
+    this.getBy({ _id: eid });
+  }
 }

@@ -9,15 +9,7 @@ import { userRepository } from "../repositories/index.js";
 import { isValidEmail } from "../utils/validators.js";
 
 const getToken = (req) => {
-  let token = null;
-
-  if (req.cookies.currentUser) {
-    token = req.cookies.currentUser;
-  } else {
-    throw new customError("No autenticado", 401);
-  }
-
-  return token;
+  return req.cookies?.currentUser || null;
 };
 
 export const initPassport = async () => {
