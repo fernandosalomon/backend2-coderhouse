@@ -5,7 +5,7 @@ export default class EventRepository extends BaseRepository {
     super(dao);
   }
 
-  getById(eid) {
-    this.getBy({ _id: eid });
+  getById = (eid) => {
+    return this.getBy({ _id: eid });
   }
 }

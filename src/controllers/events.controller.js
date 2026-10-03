@@ -25,7 +25,16 @@ export const getEventById = async (req, res) => {
   }
 };
 
-export const createEvent = (req, res) => {
+export const createEvent = async (req, res) => {
   const eventData = req.body;
   const user = req.user;
+  try {
+    const newEvent = await eventService.create(eventData, user.id);
+    res.status(201).json({ status: "success", payload: newEvent });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message ? error.message : "Internal Server Error",
+    });
+  }
 };
