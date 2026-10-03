@@ -1,8 +1,9 @@
 import EventModel from "../models/Event.js";
 
 export default class EventsDAO {
-  get = (params) => {
-    return EventModel.find(params).lean();
+  get = (filters, pagination) => {
+    pagination.lean = true;
+    return EventModel.paginate(filters, pagination);
   };
 
   getBy = (params) => {
@@ -14,7 +15,11 @@ export default class EventsDAO {
   };
 
   update = (id, doc) => {
-    return EventModel.findByIdAndUpdate(id, { $set: doc });
+    return EventModel.findByIdAndUpdate(
+      id,
+      { $set: doc },
+      { returnDocument: "after" },
+    );
   };
 
   delete = (id) => {

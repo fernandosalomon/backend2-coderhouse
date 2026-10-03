@@ -8,25 +8,21 @@ Plataforma de Eventos e Inscripciones es una API REST desarrollada con Node.js y
 
 El proyecto se desarrolla en el marco de la materia Backend II y tiene como objetivo construir una aplicación backend escalable, organizada mediante una arquitectura por capas y preparada para incorporar progresivamente nuevas funcionalidades relacionadas con la gestión de actividades de capacitación.
 
-En esta cuarta pre-entrega se realiza un refactor del sistema de autenticación implementado en las entregas anteriores mediante la incorporación de Passport.js.
-
-El objetivo de esta etapa no es modificar el comportamiento externo de la API, sino mejorar la organización interna de la autenticación. Las rutas y respuestas existentes se mantienen, mientras que las operaciones de registro, login y validación del usuario autenticado pasan a estar organizadas mediante estrategias de Passport.
-
-El sistema continúa utilizando JWT almacenados en cookies HTTP Only, pero ahora Passport centraliza las estrategias de autenticación y deja preparada la arquitectura para incorporar posteriormente otros mecanismos de autenticación, como proveedores externos OAuth.
+El sistema utiliza JWT almacenados en cookies HTTP Only, Passport para centralizar las estrategias de autenticación y un middleware especifico para el manejo de los mecanismos de autorización de usuarios basado en roles.
 
 ### 2. Tecnologías utilizadas
-  
-+ Node.js: entorno de ejecución de JavaScript.
-+ Express: framework para el desarrollo de la API REST.
-+ MongoDB: base de datos utilizada para la persistencia de usuarios.
-+ Mongoose: ODM utilizado para interactuar con MongoDB.
-+ bcrypt: librería utilizada para realizar el hash seguro de las contraseñas.
-+ dotenv: gestión de variables de entorno.
-+ jsonwebtoken: librería utilizada para generar y verificar tokens JWT.
-+ cookie-parser: middleware utilizado para gestionar cookies HTTP.
-+ Passport.js: framework utilizado para centralizar las estrategias de autenticación.
-+ Passport-local: estrategia utilizada para registro y autenticación mediante credenciales.
-+ Passport-jwt: estrategia utilizada para leer y extraer la información de los tokens JWT.
+
+- Node.js: entorno de ejecución de JavaScript.
+- Express: framework para el desarrollo de la API REST.
+- MongoDB: base de datos utilizada para la persistencia de usuarios.
+- Mongoose: ODM utilizado para interactuar con MongoDB.
+- bcrypt: librería utilizada para realizar el hash seguro de las contraseñas.
+- dotenv: gestión de variables de entorno.
+- jsonwebtoken: librería utilizada para generar y verificar tokens JWT.
+- cookie-parser: middleware utilizado para gestionar cookies HTTP.
+- Passport.js: framework utilizado para centralizar las estrategias de autenticación.
+- Passport-local: estrategia utilizada para registro y autenticación mediante credenciales.
+- Passport-jwt: estrategia utilizada para leer y extraer la información de los tokens JWT.
 
 ### 3. Arquitectura del proyecto
 
@@ -46,26 +42,36 @@ proyecto-eventos/
 │ ├── routes/
 │ │   ├── events.router.js
 │ │   ├── health.router.js
+│ │   ├── users.router.js
 │ │   └── sessions.router.js
 │ ├── controllers/
 │ │   ├── events.controller.js
+│ │   ├── users.controller.js
 │ │   └── sessions.controller.js
 │ ├── services/
+│ │   ├── events.services.js
+│ │   └── users.services.js
 │ ├── repositories/
 │ │   ├── index.js
 │ │   ├── BaseRepository.js
+│ │   ├── EventRepository.js
 │ │   └── UserRepository.js
 │ ├── dao/
+│ │   ├── Events.dao.js
 │ │   └── Users.dao.js
 │ ├── models/
 │ │   ├── User.js
 │ │   └── Event.js
 │ ├── middlewares/
+│ │   ├── authorize.middleware.js
 │ │   └── errorHandler.js
-│ └── utils/
+│ ├── dto/
+│ │   ├── Event.dto.js
+│ │   └── User.dto.js
+│ ├── utils/
 │ │   ├── customError.js
 │ │   ├── validators.js
-│     └── hash.js
+│ │   └── hash.js
 ├── .env.example
 ├── .gitignore
 ├── package.json
@@ -74,39 +80,58 @@ proyecto-eventos/
 
 Responsabilidades de las capas
 
-+ **src/app.js**: Configuración de Express, middlewares y rutas.
-+ **src/server.js**: Inicialización del servidor HTTP y conexión con la base de datos.
-+ **src/config/**: Configuración de la aplicación y servicios externos.
-+ **src/routes/**: Definición de los endpoints y vinculación con los controladores.
-+ **src/controllers/**: Recepción de las solicitudes HTTP y construcción de las respuestas.
-+ **src/services/**: Implementación de la lógica de negocio.
-+ **src/repositories/**: Abstracción del acceso a los datos.
-+ **src/dao/**: Operaciones de acceso y persistencia de datos.
-+ **src/models/**: Definición de los modelos de datos mediante Mongoose.
-+ **src/middlewares/**: Funciones intermedias utilizadas durante el procesamiento de solicitudes.
-+ **src/utils/**: Funciones auxiliares reutilizables, como el hash de contraseñas.
+- **src/app.js**: Configuración de Express, middlewares y rutas.
+- **src/server.js**: Inicialización del servidor HTTP y conexión con la base de datos.
+- **src/config/**: Configuración de la aplicación y servicios externos.
+- **src/routes/**: Definición de los endpoints y vinculación con los controladores.
+- **src/controllers/**: Recepción de las solicitudes HTTP y construcción de las respuestas.
+- **src/services/**: Implementación de la lógica de negocio.
+- **src/repositories/**: Abstracción del acceso a los datos.
+- **src/dao/**: Operaciones de acceso y persistencia de datos.
+- **src/dto/**: Definición y control de los datos que entran o salen de una capa de tu aplicación.
+- **src/models/**: Definición de los modelos de datos mediante Mongoose.
+- **src/middlewares/**: Funciones intermedias utilizadas durante el procesamiento de solicitudes.
+- **src/utils/**: Funciones auxiliares reutilizables, como el hash de contraseñas.
 
-### 4. Modelo UserModel
+### 4. Modelos
 
-El modelo UserModel representa a los usuarios registrados en la plataforma.
+#### 4.1 Modelo Usuarios
+
+El modelo `UserModel` representa a los usuarios registrados en la plataforma.
 
 Cuenta con los siguientes campos:
 
-+ **first_name**: Nombre del usuario.
-+ **last_name**: Apellido del usuario.
-+ **email**: Dirección de correo electrónico.
-+ **password**: Contraseña almacenada mediante un hash de bcrypt.
-+ **role**: Rol del usuario dentro de la plataforma.
+- **first_name**: Nombre del usuario (requerido).
+- **last_name**: Apellido del usuario (requerido).
+- **email**: Dirección de correo electrónico (requerido).
+- **password**: Contraseña almacenada mediante un hash de bcrypt (requerido).
+- **role**: Rol del usuario dentro de la plataforma.
 
-El campo role utiliza *user* como valor predeterminado y admite los siguientes valores:
+El campo role utiliza _user_ como valor predeterminado y admite los siguientes valores:
 
-+ user
-+ organizer
-+ admin
+- user
+- organizer
+- admin
 
-El rol no puede ser definido ni modificado mediante el body del registro público. Todo usuario registrado mediante este endpoint obtiene inicialmente el rol *user*
+El rol no puede ser definido ni modificado mediante el body del registro público. Todo usuario registrado mediante este endpoint obtiene inicialmente el rol _user_
 
-Los roles *organizer* y *admin* quedan reservados para mecanismos de gestión y autorización que serán implementados en etapas posteriores.
+Los roles _organizer_ y _admin_ quedan reservados para mecanismos de gestión y autorización que serán implementados en etapas posteriores.
+
+#### 4.2 Modelo Eventos
+
+El modelo `EventModel` representa a los eventos registrados en la plataforma.
+
+Cuenta con los siguientes campos:
+
+- title: Título del evento (requerido)
+- description: Descripción detallada del evento (requerido)
+- category: Categoría a la que pertenece el evento (requerido)
+- date: Fecha y hora en que se realizará el evento (requerido)
+- location: Lugar donde se realizará el evento (requerido)
+- capacity: Cantidad máxima de asistentes permitidos (requerido)
+- price: Precio de inscripción o asistencia al evento (por defecto: 0)
+- status: Estado actual del evento. Puede ser draft, published, cancelled o finished (por defecto: draft)
+- organizer: Identificador del usuario responsable de organizar el evento (requerido)
 
 ### 5. Inicialización de Passport
 
@@ -117,6 +142,7 @@ Las estrategias no se definen directamente en app.js. En cambio, se encuentran c
 Esto permite mantener `app.js` enfocado exclusivamente en la configuración de la aplicación y facilita agregar nuevas estrategias sin modificar el archivo principal.
 
 La configuración sigue conceptualmente la siguiente estructura:
+
 ```text
 app.js
   │
@@ -129,6 +155,7 @@ app.js
           ├── login
           └── current
 ```
+
 ### 6. Estrategias de Passport
 
 Esta entrega implementa tres estrategias principales: **register**, **login** y **current**. Todas se encuentran centralizadas en `src/config/passport.config.js`.
@@ -139,16 +166,17 @@ La estrategia register se utiliza para el endpoint: **POST /api/sessions/registe
 
 La estrategia concentra la lógica necesaria para crear un nuevo usuario:
 
-+ Validación de campos obligatorios.
-+ Normalización del email.
-+ Verificación de email duplicado.
-+ Hash de la contraseña mediante bcrypt.
-+ Asignación del rol por defecto user.
-+ Creación y persistencia del usuario.
+- Validación de campos obligatorios.
+- Normalización del email.
+- Verificación de email duplicado.
+- Hash de la contraseña mediante bcrypt.
+- Asignación del rol por defecto user.
+- Creación y persistencia del usuario.
 
 La ruta queda encargada de delegar la autenticación en Passport mediante `passport.authenticate('register', ...)`. De esta manera, la lógica de registro no se encuentra directamente dentro de la ruta.
 
 #### Flujo
+
 ```text
 POST /api/sessions/register
              │
@@ -178,22 +206,25 @@ POST /api/sessions/register
 
 La solicitud al endpoint **POST /api/sessions/register** debe contener los siguientes campos obligatorios:
 
-+ first_name
-+ last_name
-+ email
-+ password
+- first_name
+- last_name
+- email
+- password
 
-El campo *role* no forma parte de los datos permitidos para establecer el rol durante el registro público.
+El campo _role_ no forma parte de los datos permitidos para establecer el rol durante el registro público.
 
 #### Email existente
+
 Si el email ya se encuentra registrado en la base de datos, la API responde con el mensaje:
 **409 Conflict**
+
 ```json
 {
   "status": "error",
   "message": "El email ya está registrado"
 }
 ```
+
 Captura de Postman:
 ![alt text](/public/img/email-existente-postman.png)
 
@@ -203,15 +234,16 @@ La estrategia login se utiliza para el endpoint **POST /api/sessions/login**.
 
 La estrategia concentra la lógica necesaria para validar las credenciales recibidas:
 
-+ Recibir email y contraseña.
-+ Buscar el usuario.
-+ Comparar la contraseña mediante bcrypt.
-+ Rechazar las credenciales inválidas.
-+ Pasar el usuario autenticado al controller.
+- Recibir email y contraseña.
+- Buscar el usuario.
+- Comparar la contraseña mediante bcrypt.
+- Rechazar las credenciales inválidas.
+- Pasar el usuario autenticado al controller.
 
 Si las credenciales son correctas, la estrategia no genera el JWT. La generación del JWT y la configuración de la cookie `currentUser` son responsabilidad del controller.
 
 #### Flujo
+
 ```text
 Passport
    │
@@ -229,12 +261,14 @@ Passport
 
 Cuando el email no existe o la contraseña no coincide, la API responde con el mismo mensaje:
 **401 Unauthorized**
+
 ```json
 {
   "status": "error",
   "message": "Credenciales inválidas"
 }
 ```
+
 No se diferencia entre usuario inexistente y contraseña incorrecta.
 
 Captura de Postman:
@@ -246,14 +280,15 @@ La estrategia current se utiliza en el endpoint **GET /api/sessions/current**
 
 Esta estrategia obtiene el JWT desde la cookie `currentUser`. Luego:
 
-+ Obtiene el token.
-+ Verifica la firma.
-+ Comprueba la validez del token.
-+ Obtiene el payload.
-+ Deja la información disponible mediante `req.user`.
-+ Permite que el controller genere la respuesta.
+- Obtiene el token.
+- Verifica la firma.
+- Comprueba la validez del token.
+- Obtiene el payload.
+- Deja la información disponible mediante `req.user`.
+- Permite que el controller genere la respuesta.
 
 El payload contiene la siguiente información:
+
 ```json
 {
   "id": "665f2a...",
@@ -261,9 +296,11 @@ El payload contiene la siguiente información:
   "role": "user"
 }
 ```
+
 #### Token inválido o inexistente
 
 Si no existe una cookie válida o el JWT es inválido o expiró, el servidor responde con **401 Unauthorized**
+
 ```json
 {
   "status": "error",
@@ -272,6 +309,7 @@ Si no existe una cookie válida o el JWT es inválido o expiró, el servidor res
 ```
 
 ### 7. Logout
+
 **POST /api/sessions/logout**
 
 Permite cerrar la sesión del usuario.
@@ -281,6 +319,7 @@ El endpoint elimina la cookie: `currentUser`
 Request: No requiere body.
 
 **Response 200 - OK**
+
 ```json
 {
   "status": "success",
@@ -307,6 +346,7 @@ Los tokens de autenticación se generan mediante jsonwebtoken.
 La lógica relacionada con JWT se encuentra centralizada en `src/utils/jwt.js`
 
 El token contiene únicamente la información mínima necesaria para identificar al usuario:
+
 ```json
 {
   "id": "665f2a...",
@@ -314,6 +354,7 @@ El token contiene únicamente la información mínima necesaria para identificar
   "role": "user"
 }
 ```
+
 El JWT se firma utilizando la variable de entorno:
 
 JWT_SECRET=change_this_secret
@@ -332,26 +373,111 @@ El JWT se almacena en una cookie denominada `currentUser`
 
 La cookie se configura con las siguientes propiedades:
 
-+ **httpOnly**:true
-+ **sameSite**:lax
-+ **maxAge**:3600000 ms
-+ **secure**:true (únicamente en producción)
+- **httpOnly**:true
+- **sameSite**:lax
+- **maxAge**:3600000 ms
+- **secure**:true (únicamente en producción)
 
 El uso de httpOnly evita que la cookie pueda ser accedida directamente mediante JavaScript ejecutado en el navegador.
 
 La configuración de secure permite utilizar HTTP durante el desarrollo local y exigir HTTPS en producción.
 
 ### 11. Endpoints disponibles
-|Método |	Ruta  | Descripción |	Autenticación |
-|-------|-------|-------------|---------------|
-|GET  | /api/health | Verifica que el servidor esté activo. | **No**  |
-|GET  | /api/events | Obtiene los eventos disponibles.  | **No**  |
-|POST | /api/sessions/register  | Registra un nuevo usuario.  | **No**  |
-|POST | /api/sessions/login | Autentica un usuario y genera la cookie JWT.  | **No**  |
-|GET  | /api/sessions/current | Obtiene el usuario autenticado. | **Sí** |
-|POST | /api/sessions/logout  | Cierra la sesión y elimina la cookie. | **No**  |
 
-### 12. Configuración de variables de entorno
+| Método  | Endpoint                 | Descripción                           | Autorización                                               |
+| ------- | ------------------------ | ------------------------------------- | ---------------------------------------------------------- |
+| `GET`   | `/api/health/`           | Verifica que el servidor esté activo  | Pública                                                    |
+| `GET`   | `/api/events/`           | Obtiene todos los eventos             | Pública                                                    |
+| `GET`   | `/api/events/:eid`       | Obtiene un evento por su ID           | Pública                                                    |
+| `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere usuario autenticado                               |
+| `PUT`   | `/api/events/:eid`       | Actualiza un evento completo          | Requiere usuario autenticado con rol `organizer` o `admin` |
+| `PATCH` | `/api/events/:eid`       | Actualiza el estado de un evento      | Requiere usuario autenticado con rol `organizer` o `admin` |
+| `POST`  | `/api/sessions/register` | Registra un nuevo usuario             | Pública                                                    |
+| `POST`  | `/api/sessions/login`    | Inicia sesión de usuario              | Pública                                                    |
+| `GET`   | `/api/sessions/current`  | Obtiene el usuario autenticado actual | Requiere usuario autenticado                               |
+| `POST`  | `/api/sessions/logout`   | Cierra la sesión del usuario          | Pública / según lógica del controlador                     |
+| `GET`   | `/api/users/`            | Lista todos los                       |                                                            |
+
+### 12. Autorización
+
+#### 12.1 Sistema de roles
+
+Los tres roles disponibles representan diferentes niveles de permisos.
+
+##### `user`: Usuario registrado de la plataforma.
+
+Puede:
+
+- Consultar eventos publicados.
+- Acceder a sus recursos privados.
+- Realizar las acciones permitidas para participantes.
+
+No puede:
+
+- Crear eventos.
+- Modificar eventos.
+- Cancelar eventos.
+- Administrar usuarios.
+
+##### `organizer`: Usuario encargado de organizar cursos, capacitaciones y actividades de formación.
+
+Puede:
+
+- Consultar eventos publicados.
+- Crear eventos.
+- Modificar sus propios eventos.
+- Cancelar sus propios eventos.
+
+No puede:
+
+- Modificar eventos pertenecientes a otros organizadores.
+- Administrar usuarios.
+- Realizar acciones exclusivas de admin.
+
+##### `admin`: Administrador de la plataforma.
+
+Puede:
+
+- Consultar eventos.
+- Crear eventos.
+- Modificar cualquier evento.
+- Cancelar cualquier evento.
+- Acceder a rutas administrativas.
+- Consultar todos los usuarios.
+
+#### 12.2 Matriz de permisos
+
+La autorización de la plataforma se define mediante la siguiente matriz:
+
+| Acción                       | user | organizer | admin |
+| ---------------------------- | :--: | :-------: | :---: |
+| Consultar eventos publicados |  ✅  |    ✅     |  ✅   |
+| Crear eventos                |  ❌  |    ✅     |  ✅   |
+| Modificar eventos propios    |  ❌  |    ✅     |  ✅   |
+| Cancelar eventos propios     |  ❌  |    ✅     |  ✅   |
+| Modificar cualquier evento   |  ❌  |    ❌     |  ✅   |
+| Cancelar cualquier evento    |  ❌  |    ❌     |  ✅   |
+| Ver todos los usuarios       |  ❌  |    ❌     |  ✅   |
+
+#### 12.3 Middleware de autorización
+
+El middleware de autorización (`src/middlewares/authorize.middleware.js`) recibe los roles permitidos como parámetros.
+
+Su utilización tiene la siguiente forma: `authorize("organizer", "admin")`
+
+El middleware compara los roles permitidos con: `req.user.role`
+
+Si el rol no está autorizado, responde `403`.
+
+Esto permite reutilizar el mismo middleware en diferentes rutas sin hardcodear la lógica de autorización en cada endpoint.
+
+### 13. Ruta administrativa
+
+El endpoint `GET /api/users` devuelve una lista de todos los usuarios registrados en la plataforma.
+
+Este endpoint solo es accesible para usuarios `admin`. Para usuarios `organizer` y `user`, el servidor responde `403`.
+
+### 14. Configuración de variables de entorno
 
 El proyecto utiliza dotenv para cargar las variables de entorno desde .env.
 
@@ -379,7 +505,7 @@ COOKIE_SECRET=
 
 El repositorio incluye .env.example como plantilla de configuración.
 
-### 13. Instalación
+### 15. Instalación
 
 Clonar el repositorio:
 
@@ -399,7 +525,7 @@ Configurar las variables de entorno:
 
 Verificar que MongoDB se encuentre disponible y que MONGO_URI apunte a la instancia correspondiente.
 
-### 14. Ejecución
+### 16. Ejecución
 
 Iniciar el servidor:
 
@@ -411,98 +537,23 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
 
-### 15. Pruebas del flujo register → login → /current (200) → logout → /current (401).
+### 17. Pre-entrega N.º 5
 
-#### 15.1 Registro exitoso
-**Request**:
-```json
-{
-  "first_name": "Ana",
-  "last_name": "Pérez",
-  "email": "Ana@Mail.com ",
-  "password": "Secreta123"
-}
-```
-Captura Postman:
-![alt text](/public/img/register-postman.png)
+#### POST /api/events con rol user → 403
 
-Captura MongoDB:
-![alt text](/public/img/register-mongodb.png)
+![alt text](/public/img/authorize-newEvent-user.png)
 
-#### 15.2 Login
-**Request**:
-```json
-{
-  "email": "Ana@Mail.com ",
-  "password": "Secreta123"
-}
-```
-Captura Postman:
-![alt text](/public/img/login-postman.png)
+#### POST /api/events con rol organizer → éxito
 
-#### 15.3 /current (HTTP 200)
-![alt text](/public/img/current-postman.png)
+![alt text](/public/img/authorize-newEvent-organizer.png)
 
-#### 15.4 Logout
-![alt text](/public/img/logout-postman.png)
+#### Ruta administrativa con rol organizer → 403
+![alt text](/public/img/adminRoute-organizer.png)
 
-#### 15.5 /current (HTTP 401)
-![alt text](/public/img/current-not-valid-postman.png)
+#### Ruta administrativa con rol admin → éxito
+![alt text](/public/img/adminRoute-admin.png)
 
-### 16. Preparación para futuros providers
+#### Cualquier ruta privada sin cookie → 401
 
-Una de las ventajas de centralizar las estrategias de autenticación en `src/config/passport.config.js` es que permite incorporar nuevos mecanismos de autenticación sin modificar app.js.
 
-La arquitectura queda preparada para incorporar, por ejemplo:
-```text
-passport.config.js
-│
-├── register
-├── login
-├── current
-├── Google
-├── GitHub
-└── futuras estrategias
-```
-
-De esta forma, los mecanismos de autenticación pueden evolucionar sin modificar la configuración principal de Express. La incorporación de providers externos como Google o GitHub queda prevista para futuras etapas del proyecto.
-
-### 17.  Próximas etapas
-
-La arquitectura actual permite continuar desarrollando la plataforma sobre la misma base. Entre las próximas funcionalidades se encuentran:
-
-+ Autorización basada en roles.
-+ Protección de rutas según permisos.
-+ Gestión de usuarios.
-+ Gestión de cursos y capacitaciones.
-+ CRUD de eventos.
-+ Inscripciones de participantes.
-+ Control de cupos.
-+ Tickets.
-+ Notificaciones.
-+ Integración con providers externos mediante Passport.
-
-### 18. Alcance de la Pre-entrega N.º 4
-
-Esta entrega refactoriza el sistema de autenticación desarrollado anteriormente mediante la incorporación de Passport.js.
-
-Se mantienen las funcionalidades y el contrato externo de la Pre-entrega N.º 3, incorporando:
-
-+ Inicialización de Passport en app.js.
-+ Configuración centralizada de estrategias.
-+ Estrategia register.
-+ Estrategia login.
-+ Estrategia current.
-+ Validación de credenciales mediante Passport.
-+ Validación del JWT mediante Passport.
-+ Disponibilidad del usuario autenticado mediante req.user.
-+ Generación del JWT en el controller.
-+ Configuración de la cookie currentUser en el controller.
-+ Logout mediante eliminación de la cookie.
-+ Mantenimiento de bcrypt para la protección de contraseñas.
-+ Preparación para futuros providers de autenticación.
-+ Mantenimiento de las rutas y respuestas existentes.
-
-El cambio principal respecto de la Pre-entrega N.º 3 es interno y arquitectónico: Passport.js centraliza las estrategias de autenticación sin modificar el comportamiento externo de la API.
-
-La autorización basada en roles, la gestión completa de cursos y capacitaciones, las inscripciones y los providers externos quedan preparados para futuras etapas del proyecto.
+organizer intentando modificar evento ajeno → error

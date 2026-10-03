@@ -51,7 +51,6 @@ export const initPassport = async () => {
           if (!isPasswordValid) {
             return done(new customError("Credenciales Inválidas", 401));
           }
-
           return done(null, new UserDTO(user));
         } catch (error) {
           return done(error);
