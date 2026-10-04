@@ -64,7 +64,7 @@ class EventService {
 
   getById = async (eid) => {
     const event = await eventRepository.getById(eid);
-    console.log(event);
+
     if (!event) {
       throw new customError("El evento no existe", 404);
     }

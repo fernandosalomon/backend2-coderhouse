@@ -9,6 +9,7 @@ export class EventDTO {
     this.capacity = data?.capacity;
     this.price = data?.price;
     this.location = data?.location?.trim();
+    this.status = data?.status;
     this.organizer = new UserDTO(data?.organizer);
   }
 }
