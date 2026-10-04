@@ -389,7 +389,7 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 | `GET`   | `/api/health/`           | Verifica que el servidor esté activo  | Pública                                                    |
 | `GET`   | `/api/events/`           | Obtiene todos los eventos             | Pública                                                    |
 | `GET`   | `/api/events/:eid`       | Obtiene un evento por su ID           | Pública                                                    |
-| `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere autenticación y rol `organizer` o `admin`        |
+| `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere autenticación y rol `organizer` o `admin`         |
 | `PUT`   | `/api/events/:eid`       | Actualiza un evento completo          | Requiere usuario autenticado con rol `organizer` o `admin` |
 | `PATCH` | `/api/events/:eid`       | Actualiza el estado de un evento      | Requiere usuario autenticado con rol `organizer` o `admin` |
 | `POST`  | `/api/sessions/register` | Registra un nuevo usuario             | Pública                                                    |
@@ -402,12 +402,12 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 
 La ruta base es `/api/events`.
 
-| Método | Ruta | Función |
-| --- | --- | --- |
-| `GET` | `/` | Lista eventos. Admite filtros `category`, `status`, `location`, `fromDate`, `toDate`, `page` y `limit`. |
-| `GET` | `/:eid` | Obtiene un evento por ID. |
-| `POST` | `/` | Crea un evento. Requiere autenticación y rol `organizer` o `admin`. |
-| `PUT` | `/:eid` | Actualiza un evento. Requiere autenticación y rol `organizer` o `admin`. |
+| Método  | Ruta    | Función                                                                                                                |
+| ------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GET`   | `/`     | Lista eventos. Admite filtros `category`, `status`, `location`, `fromDate`, `toDate`, `page` y `limit`.                |
+| `GET`   | `/:eid` | Obtiene un evento por ID.                                                                                              |
+| `POST`  | `/`     | Crea un evento. Requiere autenticación y rol `organizer` o `admin`.                                                    |
+| `PUT`   | `/:eid` | Actualiza un evento. Requiere autenticación y rol `organizer` o `admin`.                                               |
 | `PATCH` | `/:eid` | Cambia el estado (`draft`, `published`, `cancelled` o `finished`). Requiere autenticación y rol `organizer` o `admin`. |
 
 Para crear un evento, enviar `title`, `description`, `category`, `date`, `location` y `capacity`; `price` es opcional y vale `0` por defecto. El organizador se asigna al usuario autenticado.
@@ -552,24 +552,34 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
 
-### 18. Pre-entrega N.º 5
+### 18. Pre-entrega N.º 6
 
-#### POST /api/events con rol user → 403
+#### Crear evento con rol user→ 403
 
-![alt text](/public/img/authorize-newEvent-user.png)
+![alt text](/public/img/createEvent-roleUser.png)
 
-#### POST /api/events con rol organizer → éxito
+#### Crear evento con fecha pasada → error de validación
 
-![alt text](/public/img/authorize-newEvent-organizer.png)
+![alt text](/public/img/createEvent-prevDate.png)
 
-#### Ruta administrativa con rol organizer → 403
-![alt text](/public/img/adminRoute-organizer.png)
+#### Crear evento con capacity: 0→ error de validación
 
-#### Ruta administrativa con rol admin → éxito
-![alt text](/public/img/adminRoute-admin.png)
+![alt text](/public/img/createEvent-capacity0.png)
 
-#### Cualquier ruta privada sin cookie → 401
-![alt text](/public/img/privateRoute-noCookie.png)
+#### organizer modifica evento propio → éxito
+![alt text](/public/img/modifyEvent-organizer.png)
 
-#### organizer intentando modificar evento ajeno → error
-![alt text](/public/img/anotherOrganizerModifyEvent.png)
+#### organizer modifica evento ajeno → 403
+![alt text](/public/img/modifyEvent-organizerNotOwn.png)
+
+#### admin modifica evento de otro organizador → éxito
+![alt text](/public/img/modifyEvent-admin.png)
+
+#### Cambiar estado de evento cancelado → error
+![alt text](/public/img/changeStatus-cancelledEvent.png)
+
+#### Listar con filtros: ?status=published&category=workshop&page=2&limit=5
+![alt text](/public/img/getEventWithFilters.png)
+
+#### Consultar evento inexistente → 404
+![alt text](/public/img/GetEventNotExists.png)

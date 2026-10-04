@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { eventRepository } from "../repositories/index.js";
 import { customError } from "../utils/customError.js";
+import { EventDTO } from "../dto/Event.dto.js";
 
 class EventService {
   getAll = (query) => {
@@ -12,7 +13,7 @@ class EventService {
       toDate,
       page = 1,
       limit = 10,
-      sort = "date",
+      sort,
     } = query;
 
     const filters = {};
@@ -52,31 +53,35 @@ class EventService {
     const skip = (pageNumber - 1) * limitNumber;
     pagination.skip = skip;
 
-    pagination.sort = { date: 1 };
+    if (sort) {
+      pagination.sort = {};
+      pagination.sort[date] = 1;
+    }
 
     const events = eventRepository.getAll(filters, pagination);
     return events;
   };
 
-  getById = (eid) => {
-    const event = eventRepository.getById(eid);
+  getById = async (eid) => {
+    const event = await eventRepository.getById(eid);
+    console.log(event);
     if (!event) {
-      throw new customError("El evento no existe", 400);
+      throw new customError("El evento no existe", 404);
     }
-    return event;
+    return new EventDTO(event);
   };
 
-  create = (event, uid) => {
+  create = async (event, uid) => {
     const { title, description, category, date, location, capacity, price } =
       event;
-
     if (
       !title ||
       !description ||
       !category ||
       !date ||
       !location ||
-      !capacity
+      capacity === undefined ||
+      capacity === null
     ) {
       throw new customError("Faltan campos obligatorios", 400);
     }
@@ -112,8 +117,8 @@ class EventService {
       organizer: new mongoose.Types.ObjectId(uid),
     };
 
-    const newEvent = eventRepository.create(eventDTO);
-    return newEvent;
+    const newEvent = await eventRepository.create(eventDTO);
+    return new EventDTO(newEvent);
   };
 
   update = async (eid, updateData, user) => {
@@ -123,7 +128,6 @@ class EventService {
       throw new customError("Evento no encontrado", 400);
     }
 
-    // 1. Un organizer solo puede modificar sus propios eventos.
     if (
       user.role === "organizer" &&
       event.organizer.toString() !== user.id.toString()
@@ -134,7 +138,6 @@ class EventService {
       );
     }
 
-    // 2. Los eventos cancelados no pueden modificarse.
     if (event.status === "cancelled") {
       throw new customError(
         "Los eventos cancelados no pueden modificarse",
@@ -142,7 +145,6 @@ class EventService {
       );
     }
 
-    // 3. Validar fecha si se está modificando.
     if (updateData.date !== undefined) {
       const newDate = new Date(updateData.date);
 
@@ -157,14 +159,12 @@ class EventService {
       updateData.date = newDate;
     }
 
-    // 4. Validar capacity si se está modificando.
     if (updateData.capacity !== undefined) {
       if (updateData.capacity <= 0) {
         throw new customError("La capacidad debe ser mayor a 0", 400);
       }
     }
 
-    // 5. Validar price si se está modificando.
     if (updateData.price !== undefined) {
       if (updateData.price < 0) {
         throw new customError("El precio no puede ser negativo");
@@ -172,7 +172,7 @@ class EventService {
     }
 
     const updatedEvent = await eventRepository.update(eid, updateData);
-    return updatedEvent;
+    return new EventDTO(updatedEvent);
   };
 
   updateStatus = async (eid, newStatus, user) => {
@@ -182,7 +182,6 @@ class EventService {
       throw new customError("Evento no encontrado", 400);
     }
 
-    // 1. Un organizer solo puede modificar sus propios eventos.
     if (
       user.role === "organizer" &&
       event.organizer.toString() !== user.id.toString()
@@ -193,17 +192,24 @@ class EventService {
       );
     }
 
+    if (event.date <= new Date() || event.status === "cancelled") {
+      throw new customError(
+        "No se puede cambiar el estado de eventos cancelados o finalizados",
+        400,
+      );
+    }
+
     if (newStatus === "cancelled" && event.date <= new Date()) {
-      return res.status(400).json({
-        status: "error",
-        message: "No se puede cancelar un evento que ya finalizó",
-      });
+      throw new customError(
+        "No se puede cancelar un evento que ya finalizó",
+        400,
+      );
     }
 
     const updatedEvent = await eventRepository.update(eid, {
       status: newStatus,
     });
-    return updatedEvent;
+    return new EventDTO(updatedEvent);
   };
 }
 
