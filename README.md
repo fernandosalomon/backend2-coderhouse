@@ -389,7 +389,7 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 | `GET`   | `/api/health/`           | Verifica que el servidor esté activo  | Pública                                                    |
 | `GET`   | `/api/events/`           | Obtiene todos los eventos             | Pública                                                    |
 | `GET`   | `/api/events/:eid`       | Obtiene un evento por su ID           | Pública                                                    |
-| `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere usuario autenticado                               |
+| `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere autenticación y rol `organizer` o `admin`        |
 | `PUT`   | `/api/events/:eid`       | Actualiza un evento completo          | Requiere usuario autenticado con rol `organizer` o `admin` |
 | `PATCH` | `/api/events/:eid`       | Actualiza el estado de un evento      | Requiere usuario autenticado con rol `organizer` o `admin` |
 | `POST`  | `/api/sessions/register` | Registra un nuevo usuario             | Pública                                                    |
@@ -398,9 +398,24 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 | `POST`  | `/api/sessions/logout`   | Cierra la sesión del usuario          | Pública / según lógica del controlador                     |
 | `GET`   | `/api/users/`            | Lista todos los                       |                                                            |
 
-### 12. Autorización
+### 12 Eventos
 
-#### 12.1 Sistema de roles
+La ruta base es `/api/events`.
+
+| Método | Ruta | Función |
+| --- | --- | --- |
+| `GET` | `/` | Lista eventos. Admite filtros `category`, `status`, `location`, `fromDate`, `toDate`, `page` y `limit`. |
+| `GET` | `/:eid` | Obtiene un evento por ID. |
+| `POST` | `/` | Crea un evento. Requiere autenticación y rol `organizer` o `admin`. |
+| `PUT` | `/:eid` | Actualiza un evento. Requiere autenticación y rol `organizer` o `admin`. |
+| `PATCH` | `/:eid` | Cambia el estado (`draft`, `published`, `cancelled` o `finished`). Requiere autenticación y rol `organizer` o `admin`. |
+
+Para crear un evento, enviar `title`, `description`, `category`, `date`, `location` y `capacity`; `price` es opcional y vale `0` por defecto. El organizador se asigna al usuario autenticado.
+El rol `organizer` solo puede modificar sus propios eventos; `admin` puede modificar cualquiera.
+
+### 13. Autorización
+
+#### 13.1 Sistema de roles
 
 Los tres roles disponibles representan diferentes niveles de permisos.
 
@@ -445,7 +460,7 @@ Puede:
 - Acceder a rutas administrativas.
 - Consultar todos los usuarios.
 
-#### 12.2 Matriz de permisos
+#### 13.2 Matriz de permisos
 
 La autorización de la plataforma se define mediante la siguiente matriz:
 
@@ -459,7 +474,7 @@ La autorización de la plataforma se define mediante la siguiente matriz:
 | Cancelar cualquier evento    |  ❌  |    ❌     |  ✅   |
 | Ver todos los usuarios       |  ❌  |    ❌     |  ✅   |
 
-#### 12.3 Middleware de autorización
+#### 13.3 Middleware de autorización
 
 El middleware de autorización (`src/middlewares/authorize.middleware.js`) recibe los roles permitidos como parámetros.
 
@@ -471,13 +486,13 @@ Si el rol no está autorizado, responde `403`.
 
 Esto permite reutilizar el mismo middleware en diferentes rutas sin hardcodear la lógica de autorización en cada endpoint.
 
-### 13. Ruta administrativa
+### 14. Ruta administrativa
 
 El endpoint `GET /api/users` devuelve una lista de todos los usuarios registrados en la plataforma.
 
 Este endpoint solo es accesible para usuarios `admin`. Para usuarios `organizer` y `user`, el servidor responde `403`.
 
-### 14. Configuración de variables de entorno
+### 15. Configuración de variables de entorno
 
 El proyecto utiliza dotenv para cargar las variables de entorno desde .env.
 
@@ -505,7 +520,7 @@ COOKIE_SECRET=
 
 El repositorio incluye .env.example como plantilla de configuración.
 
-### 15. Instalación
+### 16. Instalación
 
 Clonar el repositorio:
 
@@ -525,7 +540,7 @@ Configurar las variables de entorno:
 
 Verificar que MongoDB se encuentre disponible y que MONGO_URI apunte a la instancia correspondiente.
 
-### 16. Ejecución
+### 17. Ejecución
 
 Iniciar el servidor:
 
@@ -537,7 +552,7 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
 
-### 17. Pre-entrega N.º 5
+### 18. Pre-entrega N.º 5
 
 #### POST /api/events con rol user → 403
 
@@ -554,6 +569,7 @@ El servidor utilizará el puerto definido en la variable de entorno PORT.
 ![alt text](/public/img/adminRoute-admin.png)
 
 #### Cualquier ruta privada sin cookie → 401
+![alt text](/public/img/privateRoute-noCookie.png)
 
-
-organizer intentando modificar evento ajeno → error
+#### organizer intentando modificar evento ajeno → error
+![alt text](/public/img/anotherOrganizerModifyEvent.png)

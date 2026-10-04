@@ -130,7 +130,7 @@ class EventService {
     ) {
       throw new customError(
         "No tienes permisos para modificar este evento",
-        401,
+        403,
       );
     }
 

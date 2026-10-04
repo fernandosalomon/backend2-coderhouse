@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authorize } from "../middlewares/authorize.middleware.js";
 import { getAllUsers } from "../controllers/users.controller.js";
 import passport from "passport";
+import { customError } from "../utils/customError.js";
 
 const router = Router();
 
