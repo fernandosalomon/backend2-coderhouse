@@ -1,4 +1,4 @@
-import TicketModel from "../models/Ticket.js";
+import mongoose from "mongoose";
 import { createReservationCode } from "../utils/createTicketCode.js";
 import {
   eventRepository,
@@ -22,15 +22,15 @@ class TicketService {
       throw new customError("Evento no encontrado", 404);
     }
 
-    if (event.status !== "published") {
-      throw new customError("El evento no se encuentra publicado", 400);
-    }
-
     if (event.date <= new Date() || event.status === "cancelled") {
       throw new customError(
         "No es posible inscribirse a un evento finalizado o cancelado",
         400,
       );
+    }
+
+    if (event.status !== "published") {
+      throw new customError("El evento no se encuentra publicado", 400);
     }
 
     const active = await ticketRepository.getAll({
@@ -39,7 +39,7 @@ class TicketService {
       status: { $in: ["confirmed", "pending"] },
     });
 
-    if (active) {
+    if (active.length !== 0) {
       throw new customError(
         "Ya tienes un ticket confirmado o pendiente para este evento",
         400,
@@ -47,6 +47,7 @@ class TicketService {
     }
 
     const occupied = await this.occupiedSeats(eid);
+
     if (occupied + seats > event.capacity) {
       throw new customError(
         "No hay mas cupos disponibles para este evento",
@@ -104,18 +105,14 @@ class TicketService {
   }
 
   async cancel(tid, actor) {
-    const ticket = await ticketRepository
-      .getById(tid)
-      .populate("event")
-      .populate("user", "first_name email");
+    const ticket = await ticketRepository.getById(tid);
 
-    const event = ticket.event;
     if (!ticket) {
       throw new customError("Ticket no encontrado", 404);
     }
 
     const isAdmin = actor.role === "admin";
-    const isOwner = event.organizer === actor.id;
+    const isOwner = ticket.user._id.toString() === actor.id.toString();
 
     if (!isAdmin && !isOwner) {
       throw new customError(
@@ -150,8 +147,13 @@ class TicketService {
   }
 
   async occupiedSeats(eid) {
-    const tickets = await TicketModel.aggregate([
-      { $match: { event: eid, status: { $in: ["confirmed", "pending"] } } },
+    const tickets = await ticketRepository.aggregate([
+      {
+        $match: {
+          event: new mongoose.Types.ObjectId(eid.toString()),
+          status: { $in: ["confirmed", "pending"] },
+        },
+      },
       { $group: { _id: null, total: { $sum: "$quantity" } } },
     ]);
 
