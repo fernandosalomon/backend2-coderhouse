@@ -1,5 +1,6 @@
 import { EventDTO } from "../dto/Event.dto.js";
 import { eventService } from "../services/events.services.js";
+import ticketService from "../services/tickets.services.js";
 
 export const getEvents = async (req, res) => {
   const filters = req.query;
@@ -67,8 +68,6 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-export const updateStatus = async (req, res) => {};
-
 export const updateEventStatus = async (req, res) => {
   const eid = req.params.eid;
   const { status } = req.body;
@@ -77,6 +76,35 @@ export const updateEventStatus = async (req, res) => {
   try {
     const updatedStatus = await eventService.updateStatus(eid, status, user);
     res.status(200).json({ status: "success", payload: updatedStatus });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message ? error.message : "Internal Server Error",
+    });
+  }
+};
+
+export const registerToEvent = async (req, res) => {
+  const user = req.user;
+  const eid = req.params.eid;
+  const { quantity } = req.body;
+  try {
+    const registration = await ticketService.register(eid, user.id, quantity);
+    res.status(201).json({ status: "success", payload: registration });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({
+      status: "error",
+      message: error.message ? error.message : "Internal Server Error",
+    });
+  }
+};
+
+export const listTickets = async (req, res) => {
+  const user = req.user;
+  const eid = req.params.eid;
+  try {
+    const tickets = await ticketService.listByEvent(eid, user);
+    res.status(200).json({ status: "success", payload: tickets });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
       status: "error",
