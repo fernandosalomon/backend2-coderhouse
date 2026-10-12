@@ -11,6 +11,15 @@ export default class EventsDAO {
     return EventModel.findOne(params).populate("organizer").lean();
   };
 
+  async getByFilters(filters, options = {}) {
+    const { sort = "date", skip = 0, limit = 10 } = options;
+    return EventModel.find(filters)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate("organizer", "first_name last_name email");
+  }
+
   save = async (doc) => {
     const event = await EventModel.create(doc);
     return event.populate("organizer");
@@ -24,7 +33,7 @@ export default class EventsDAO {
     ).populate("organizer");
   };
 
-  delete = (id) => {
-    return EventModel.findByIdAndUpdate(id, { status: "cancelled" });
-  };
+  async count(filters) {
+    return EventModel.countDocuments(filters);
+  }
 }

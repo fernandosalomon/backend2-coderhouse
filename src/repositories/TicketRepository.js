@@ -12,4 +12,14 @@ export default class TicketRepository extends BaseRepository {
   aggregate = (pipeline) => {
     return this.dao.aggregate(pipeline);
   };
+
+  async getActiveTicketByUserAndEvent(userId, eventId) {
+    return ticketDAO.findActiveByUserAndEvent(userId, eventId)
+  }
+  async getReservedQuantity(eventId) {
+    return ticketDAO.getReservedQuantityByEvent(eventId)
+  }
+  async createTicket(data) {
+    return ticketDAO.create(data)
+  }
 }

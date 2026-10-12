@@ -1,19 +1,19 @@
 export class TicketDTO {
-  constructor(data) {
-    this.id = data?.id;
+  constructor(ticket) {
+    this.id = ticket?.id;
     this.user = {
-      first_name: data?.user?.first_name,
-      last_name: data?.user?.last_name,
-      email: data?.user?.email,
+      first_name: ticket?.user?.first_name,
+      last_name: ticket?.user?.last_name,
+      email: ticket?.user?.email,
     };
     this.event = {
-      title: data?.event?.title,
-      date: data?.event?.date,
-      location: data?.event?.location,
+      title: ticket?.event?.title,
+      date: ticket?.event?.date,
+      location: ticket?.event?.location,
     };
-    this.status = data?.status;
-    this.quantity = data?.quantity;
-    this.reservationCode = data?.reservationCode;
-    this.createdAt = data?.createdAt;
+    this.status = ticket?.status;
+    this.quantity = ticket?.quantity;
+    this.reservationCode = ticket?.reservationCode;
+    this.createdAt = ticket?.createdAt;
   }
 }
