@@ -1,3 +1,5 @@
+import UserDTO from "./User.dto.js";
+
 export class EventDTO {
   constructor(data) {
     this.id = data?.id;
@@ -7,5 +9,7 @@ export class EventDTO {
     this.capacity = data?.capacity;
     this.price = data?.price;
     this.location = data?.location?.trim();
+    this.status = data?.status;
+    this.organizer = new UserDTO(data?.organizer);
   }
 }
