@@ -1,25 +1,32 @@
-import BaseRepository from "./BaseRepository.js";
-
-export default class TicketRepository extends BaseRepository {
+export default class TicketRepository {
   constructor(dao) {
-    super(dao);
+    this.dao = dao;
   }
 
-  getById = (eid) => {
-    return this.getBy({ _id: eid });
-  };
-
-  aggregate = (pipeline) => {
-    return this.dao.aggregate(pipeline);
-  };
-
-  async getActiveTicketByUserAndEvent(userId, eventId) {
-    return ticketDAO.findActiveByUserAndEvent(userId, eventId)
+  async getTicketById(tid) {
+    return this.dao.getById(tid);
   }
+
+  async updateTicket(ticketId, data) {
+    return this.dao.update(ticketId, data);
+  }
+
+  async getTicketByUser(userId) {
+    return this.dao.findByUser(userId);
+  }
+
+  async getTicketByEvent(eventId, options) {
+    return this.dao.findByEvent(eventId, options);
+  }
+
+  async getTicketByUserAndEvent(userId, eventId) {
+    return this.dao.findActiveByUserAndEvent(userId, eventId);
+  }
+
   async getReservedQuantity(eventId) {
-    return ticketDAO.getReservedQuantityByEvent(eventId)
+    return this.dao.getReservedQuantityByEvent(eventId);
   }
   async createTicket(data) {
-    return ticketDAO.create(data)
+    return this.dao.save(data);
   }
 }

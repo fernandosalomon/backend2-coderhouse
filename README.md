@@ -23,6 +23,7 @@ El sistema utiliza JWT almacenados en cookies HTTP Only, Passport para centraliz
 - Passport.js: framework utilizado para centralizar las estrategias de autenticación.
 - Passport-local: estrategia utilizada para registro y autenticación mediante credenciales.
 - Passport-jwt: estrategia utilizada para leer y extraer la información de los tokens JWT.
+- Nodemailer: Servicio de mensajeria para notificar compra o cancelación de tickets.
 
 ### 3. Arquitectura del proyecto
 
@@ -43,33 +44,42 @@ proyecto-eventos/
 │ │   ├── events.router.js
 │ │   ├── health.router.js
 │ │   ├── users.router.js
+│ │   ├── tickets.router.js
 │ │   └── sessions.router.js
 │ ├── controllers/
 │ │   ├── events.controller.js
 │ │   ├── users.controller.js
+│ │   ├── tickets.controller.js
 │ │   └── sessions.controller.js
 │ ├── services/
 │ │   ├── events.services.js
+│ │   ├── tickets.services.js
 │ │   └── users.services.js
 │ ├── repositories/
 │ │   ├── index.js
-│ │   ├── BaseRepository.js
+│ │   ├── TicketRepository.js
 │ │   ├── EventRepository.js
 │ │   └── UserRepository.js
 │ ├── dao/
 │ │   ├── Events.dao.js
+│ │   ├── Tickets.dao.js
 │ │   └── Users.dao.js
 │ ├── models/
 │ │   ├── User.js
+│ │   ├── Ticket.js
 │ │   └── Event.js
 │ ├── middlewares/
+│ │   ├── passportCall.js
 │ │   ├── authorize.middleware.js
 │ │   └── errorHandler.js
 │ ├── dto/
 │ │   ├── Event.dto.js
+│ │   ├── Ticket.dto.js
 │ │   └── User.dto.js
 │ ├── utils/
+│ │   ├── createTicketCode.js
 │ │   ├── customError.js
+│ │   ├── mailer.js
 │ │   ├── validators.js
 │ │   └── hash.js
 ├── .env.example
@@ -132,6 +142,22 @@ Cuenta con los siguientes campos:
 - price: Precio de inscripción o asistencia al evento (por defecto: 0)
 - status: Estado actual del evento. Puede ser draft, published, cancelled o finished (por defecto: draft)
 - organizer: Identificador del usuario responsable de organizar el evento (requerido)
+
+#### 4.3 Modelo Tickets
+
+El modelo `TicketModel` representa la inscripción de un usuario a un evento.
+
+Cuenta con los siguientes campos:
+
+- **user**: Identificador del usuario asociado al ticket, como referencia al modelo `User` (requerido).
+- **event**: Identificador del evento asociado al ticket, como referencia al modelo `Event` (requerido).
+- **status**: Estado del ticket. Puede ser `confirmed`, `pending` o `cancelled` (por defecto: `pending`).
+- **quantity**: Cantidad de entradas solicitadas (por defecto: `1`; mínimo: `1`).
+- **reservationCode**: Código único de reserva (requerido).
+- **createdAt**: Fecha de creación del ticket.
+- **cancelledAt**: Fecha de cancelación del ticket (por defecto: `null`).
+
+El esquema habilita las marcas de tiempo automáticas de Mongoose (`createdAt` y `updatedAt`) y el plugin `mongoose-paginate-v2` para paginar consultas.
 
 ### 5. Inicialización de Passport
 
@@ -392,6 +418,10 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 | `POST`  | `/api/events/`           | Crea un evento nuevo                  | Requiere autenticación y rol `organizer` o `admin`         |
 | `PUT`   | `/api/events/:eid`       | Actualiza un evento completo          | Requiere usuario autenticado con rol `organizer` o `admin` |
 | `PATCH` | `/api/events/:eid`       | Actualiza el estado de un evento      | Requiere usuario autenticado con rol `organizer` o `admin` |
+| `POST`  | `/api/events/:eid/tickets` | Inscribe al usuario autenticado en el evento | Requiere autenticación |
+| `GET`   | `/api/events/:eid/tickets` | Lista los tickets asociados al evento | Requiere autenticación y rol `organizer` o `admin`; el organizador solo puede consultar sus propios eventos |
+| `GET`   | `/api/tickets/my-tickets` | Lista los tickets del usuario autenticado | Requiere autenticación |
+| `PATCH` | `/api/tickets/:tid/cancel` | Cancela un ticket | Requiere autenticación; puede cancelarlo el titular o un `admin` |
 | `POST`  | `/api/sessions/register` | Registra un nuevo usuario             | Pública                                                    |
 | `POST`  | `/api/sessions/login`    | Inicia sesión de usuario              | Pública                                                    |
 | `GET`   | `/api/sessions/current`  | Obtiene el usuario autenticado actual | Requiere usuario autenticado                               |
@@ -528,15 +558,19 @@ Puede:
 
 La autorización de la plataforma se define mediante la siguiente matriz:
 
-| Acción                       | user | organizer | admin |
-| ---------------------------- | :--: | :-------: | :---: |
-| Consultar eventos publicados |  ✅  |    ✅     |  ✅   |
-| Crear eventos                |  ❌  |    ✅     |  ✅   |
-| Modificar eventos propios    |  ❌  |    ✅     |  ✅   |
-| Cancelar eventos propios     |  ❌  |    ✅     |  ✅   |
-| Modificar cualquier evento   |  ❌  |    ❌     |  ✅   |
-| Cancelar cualquier evento    |  ❌  |    ❌     |  ✅   |
-| Ver todos los usuarios       |  ❌  |    ❌     |  ✅   |
+| Acción                                | user | organizer | admin |
+| ----------------------------          | :--: | :-------: | :---: |
+| Consultar eventos publicados          |  ✅  |    ✅     |  ✅   |
+| Crear eventos                         |  ❌  |    ✅     |  ✅   |
+| Modificar eventos propios             |  ❌  |    ✅     |  ✅   |
+| Cancelar eventos propios              |  ❌  |    ✅     |  ✅   |
+| Modificar cualquier evento            |  ❌  |    ❌     |  ✅   |
+| Cancelar cualquier evento             |  ❌  |    ❌     |  ✅   |
+| Ver todos los usuarios                |  ❌  |    ❌     |  ✅   |
+| Comprar ticket para un evento         |  ✅  |    ✅     |  ✅   |
+| Consultar tickets comprados           |  ✅  |    ✅     |  ✅   |
+| Consultar todos los tickets de evento |  ❌  |    ✅(propio)     |  ✅   |
+| Cancelar un ticket                    |  ✅  |    ✅     |  ✅   |
 
 #### 13.3 Middleware de autorización
 
@@ -625,45 +659,3 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 `npm run dev`
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
-
-### 18. Pre-entrega N.º 7
-
-#### Inscripción exitosa → email recibido
-
-![alt text](/public/img/buyTicket.png)
-
-Captura del email:
-![alt text](image.png)
-
-#### Inscripción sin sesión → 401
-
-![alt text](/public/img/BuyTicket-NoSession.png)
-
-#### Inscripción a evento inexistente → 404
-
-![alt text](/public/img/buyTicket-EventNotFound.png)
-
-#### Inscripción a evento cancelado/finalizado → error de negocio
-
-![alt text](/public/img/buyTicket-cancelledEvent.png)
-
-#### Inscripción cuando no hay cupo suficiente → error con mensaje claro
-
-![alt text](/public/img/buyTicket-NoSeats.png)
-
-#### Inscripción duplicada activa → error
-
-![alt text](/public/img/buyTicket-Duplicate.png)
-
-#### Cancelación propia → cupo liberado (nueva inscripción por ese cupo funciona)
-
-![alt text](/public/img/cancelTicket.png)
-
-#### Cancelación de ticket ajeno como user→ 403
-![alt text](/public/img/cancelTicket-notOwn.png)
-
-#### GET /api/events/:eid/tickets como user común → 403
-![alt text](/public/img/getTicketsEvent-user.png)
-
-#### GET /api/events/:eid/tickets como organizer de otro evento → 403
-![alt text](/public/img/getTicketsEvent-notOwnEvent.png)

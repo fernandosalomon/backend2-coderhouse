@@ -1,4 +1,5 @@
 import { EventDTO } from "../dto/Event.dto.js";
+import { TicketDTO } from "../dto/Ticket.dto.js";
 import { eventService } from "../services/events.services.js";
 import ticketService from "../services/tickets.services.js";
 
@@ -6,7 +7,7 @@ export const getEvents = async (req, res) => {
   const filters = req.query;
 
   try {
-    const events = await eventService.getAll(filters);
+    const events = await eventService.getAllActiveEvents(filters);
 
     res.status(200).json({
       status: "success",
@@ -102,9 +103,20 @@ export const registerToEvent = async (req, res) => {
 export const listTickets = async (req, res) => {
   const user = req.user;
   const eid = req.params.eid;
+  const options = req.query;
   try {
-    const tickets = await ticketService.listByEvent(eid, user);
-    res.status(200).json({ status: "success", payload: tickets });
+    const tickets = await ticketService.listByEvent(eid, user, options);
+    console.log(tickets);
+    res.status(200).json({
+      status: "success",
+      payload: {
+        data: tickets.docs.map((e) => new TicketDTO(e)),
+        page: tickets.page,
+        limit: tickets.limit,
+        total: tickets.totalDocs,
+        totalPages: tickets.totalPages,
+      },
+    });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
       status: "error",

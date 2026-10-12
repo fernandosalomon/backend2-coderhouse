@@ -95,7 +95,7 @@ export const initPassport = async () => {
             return done(new customError("El email ya está registrado", 409));
           }
 
-          const newUser = await userRepository.create({
+          const newUser = await userRepository.createUser({
             first_name,
             last_name,
             email: username.toLowerCase().trim(),

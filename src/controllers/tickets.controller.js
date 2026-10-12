@@ -18,12 +18,11 @@ export const cancelTicket = async (req, res) => {
   const tid = req.params.tid;
   try {
     const cancelledTicket = await ticketService.cancel(tid, actor);
-    res
-      .status(200)
-      .json({
-        status: "success",
-        message: `El ticket ${cancelledTicket.reservationCode} fue cancelado`,
-      });
+
+    res.status(200).json({
+      status: "success",
+      message: `El ticket ${cancelledTicket.reservationCode} fue cancelado`,
+    });
   } catch (error) {
     return res.status(error.statusCode || 500).json({
       status: "error",

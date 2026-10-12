@@ -3,7 +3,7 @@ import { userRepository } from "../repositories/index.js";
 
 class UserService {
   getAllUsers = async () => {
-    const users = await userRepository.getAll();
+    const users = await userRepository.getAllUsers();
     return users.map((user) => new UserDTO(user));
   };
 }

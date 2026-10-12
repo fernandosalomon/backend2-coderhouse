@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { createReservationCode } from "../utils/createTicketCode.js";
 import {
   eventRepository,
@@ -17,7 +16,7 @@ class TicketService {
       throw new customError("La cantidad de asientos debe ser mayor a 0", 400);
     }
 
-    const event = await eventRepository.getById(eid);
+    const event = await eventRepository.getEventById(eid);
     if (!event) {
       throw new customError("Evento no encontrado", 404);
     }
@@ -33,13 +32,9 @@ class TicketService {
       throw new customError("El evento no se encuentra publicado", 400);
     }
 
-    const active = await ticketRepository.getAll({
-      event: eid,
-      user: uid,
-      status: { $in: ["confirmed", "pending"] },
-    });
+    const active = await ticketRepository.getTicketByUserAndEvent(uid, eid);
 
-    if (active.length !== 0) {
+    if (active !== null) {
       throw new customError(
         "Ya tienes un ticket confirmado o pendiente para este evento",
         400,
@@ -55,7 +50,7 @@ class TicketService {
       );
     }
 
-    const ticket = await ticketRepository.create({
+    const ticket = await ticketRepository.createTicket({
       event: eid,
       user: uid,
       quantity: seats,
@@ -75,38 +70,33 @@ class TicketService {
   }
 
   async ownTickets(user) {
-    const tickets = await ticketRepository.getAll({ user: user.id });
+    const tickets = await ticketRepository.getTicketByUser(user.id);
     return tickets.map((p) => new TicketDTO(p));
   }
 
-  async listByEvent(eid, actor) {
-    const event = await eventRepository.getById(eid);
+  async listByEvent(eid, actor, options) {
+    const event = await eventRepository.getEventById(eid);
     if (!event) {
       throw new customError("El evento no existe", 404);
     }
     const isAdmin = actor.role === "admin";
-    const isOwner = event.organizer === actor.id;
+    const isOwner = event.organizer._id.toString() === actor.id.toString();
 
     if (!isAdmin && !isOwner) {
       throw new customError("No tiene permisos para ver este evento", 403);
     }
 
-    if (isOwner) {
-      const tickets = await ticketRepository
-        .getAll({ event: eid, user: actor.id })
-        .sort({ createdAt: -1 });
-      return tickets.map((p) => new TicketDTO(p));
-    } else {
-      const tickets = await ticketRepository
-        .getAll({ event: eid })
-        .sort({ createdAt: -1 });
-      return tickets.map((p) => new TicketDTO(p));
-    }
+    const { sort = "createdAt", skip = 0, limit = 10 } = options;
+    const tickets = await ticketRepository.getTicketByEvent(eid, {
+      sort,
+      skip,
+      limit,
+    });
+    return tickets;
   }
 
   async cancel(tid, actor) {
-    const ticket = await ticketRepository.getById(tid);
-
+    const ticket = await ticketRepository.getTicketById(tid);
     if (!ticket) {
       throw new customError("Ticket no encontrado", 404);
     }
@@ -132,7 +122,7 @@ class TicketService {
       );
     }
 
-    const cancelledTicket = await ticketRepository.update(tid, {
+    const cancelledTicket = await ticketRepository.updateTicket(tid, {
       status: "cancelled",
       cancelledAt: new Date(),
     });
@@ -147,17 +137,8 @@ class TicketService {
   }
 
   async occupiedSeats(eid) {
-    const tickets = await ticketRepository.aggregate([
-      {
-        $match: {
-          event: new mongoose.Types.ObjectId(eid.toString()),
-          status: { $in: ["confirmed", "pending"] },
-        },
-      },
-      { $group: { _id: null, total: { $sum: "$quantity" } } },
-    ]);
-
-    return tickets[0]?.total || 0;
+    const tickets = await ticketRepository.getReservedQuantity(eid);
+    return tickets;
   }
 }
 

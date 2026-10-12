@@ -1,27 +1,25 @@
-import BaseRepository from "./BaseRepository.js";
-
-export default class EventRepository extends BaseRepository {
+export default class EventRepository {
   constructor(dao) {
-    super(dao);
-  }
-
-  getById = (eid) => {
-    return this.getBy({ _id: eid });
+    this.dao = dao;
   }
 
   async getEventById(id) {
-    return eventDAO.getById(id)
+    return this.dao.getBy({ _id: id });
   }
+
   async getEventsByFilters(filters, options) {
-    return eventDAO.getByFilters(filters, options)
+    return this.dao.getByFilters(filters, options);
   }
+
   async countEvents(filters) {
-    return eventDAO.count(filters)
+    return this.dao.count(filters);
   }
+
   async createEvent(data) {
-    return eventDAO.create(data)
+    return this.dao.save(data);
   }
+  
   async updateEvent(id, data) {
-    return eventDAO.update(id, data)
+    return this.dao.update(id, data);
   }
 }

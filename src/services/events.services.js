@@ -4,7 +4,7 @@ import { customError } from "../utils/customError.js";
 import { EventDTO } from "../dto/Event.dto.js";
 
 class EventService {
-  getAll = async (query) => {
+  getAllActiveEvents = async (query) => {
     const {
       category,
       status,
@@ -43,27 +43,25 @@ class EventService {
       }
     }
 
-    const pagination = {};
-    const pageNumber = Number(page);
-    pagination.page = pageNumber;
+    const options = {};
 
+    const pageNumber = Number(page);
     const limitNumber = Number(limit);
-    pagination.limit = limitNumber;
+    options.limit = limitNumber;
 
     const skip = (pageNumber - 1) * limitNumber;
-    pagination.skip = skip;
+    options.skip = skip;
 
     if (sort) {
-      pagination.sort = {};
-      pagination.sort[date] = 1;
+      options.sort = sort;
     }
 
-    const events = await eventRepository.getAll(filters, pagination);
+    const events = await eventRepository.getEventsByFilters(filters, options);
     return events;
   };
 
   getById = async (eid) => {
-    const event = await eventRepository.getById(eid);
+    const event = await eventRepository.getEventById(eid);
 
     if (!event) {
       throw new customError("El evento no existe", 404);
@@ -117,12 +115,12 @@ class EventService {
       organizer: new mongoose.Types.ObjectId(uid),
     };
 
-    const newEvent = await eventRepository.create(eventDTO);
+    const newEvent = await eventRepository.createEvent(eventDTO);
     return new EventDTO(newEvent);
   };
 
   update = async (eid, updateData, user) => {
-    const event = await eventRepository.getById(eid);
+    const event = await eventRepository.getEventById(eid);
 
     if (!event) {
       throw new customError("Evento no encontrado", 400);
@@ -130,7 +128,7 @@ class EventService {
 
     if (
       user.role === "organizer" &&
-      event.organizer.toString() !== user.id.toString()
+      event.organizer._id.toString() !== user.id.toString()
     ) {
       throw new customError(
         "No tienes permisos para modificar este evento",
@@ -171,12 +169,12 @@ class EventService {
       }
     }
 
-    const updatedEvent = await eventRepository.update(eid, updateData);
+    const updatedEvent = await eventRepository.updateEvent(eid, updateData);
     return new EventDTO(updatedEvent);
   };
 
   updateStatus = async (eid, newStatus, user) => {
-    const event = await eventRepository.getById(eid);
+    const event = await eventRepository.getEventById(eid);
 
     if (!event) {
       throw new customError("Evento no encontrado", 400);
@@ -184,7 +182,7 @@ class EventService {
 
     if (
       user.role === "organizer" &&
-      event.organizer.toString() !== user.id.toString()
+      event.organizer._id.toString() !== user.id.toString()
     ) {
       throw new customError(
         "No tienes permisos para modificar este evento",
@@ -206,7 +204,7 @@ class EventService {
       );
     }
 
-    const updatedEvent = await eventRepository.update(eid, {
+    const updatedEvent = await eventRepository.updateEvent(eid, {
       status: newStatus,
     });
     return new EventDTO(updatedEvent);

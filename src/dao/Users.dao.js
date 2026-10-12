@@ -1,27 +1,27 @@
 import UserModel from "../models/User.js";
 
 export default class UsersDAO {
-  get = (params) => {
+  async getAll(params) {
     return UserModel.find(params).lean();
-  };
+  }
 
-  getBy = (params) => {
+  async getBy(params) {
     return UserModel.findOne(params).lean();
-  };
+  }
 
-  save = (doc) => {
+  async save(doc) {
     return UserModel.create(doc);
-  };
+  }
 
-  update = (id, doc) => {
+  async update(id, doc) {
     return UserModel.findByIdAndUpdate(
       id,
       { $set: doc },
       { returnDocument: "after" },
     );
-  };
+  }
 
-  delete = (id) => {
+  async delete(id) {
     return UserModel.findByIdAndDelete(id);
-  };
+  }
 }
