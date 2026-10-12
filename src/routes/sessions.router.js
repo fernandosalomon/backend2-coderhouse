@@ -7,13 +7,14 @@ import {
 } from "../controllers/sessions.controller.js";
 import passport from "passport";
 import { customError } from "../utils/customError.js";
+import { customError } from "../utils/customError.js";
 
 const router = Router();
 
 router.post(
   "/register",
   passport.authenticate("register", { session: false }),
-  register
+  register,
 );
 
 router.post(
@@ -44,6 +45,7 @@ router.get(
   },
   getCurrentUser,
 );
+
 
 router.post("/logout", logoutUser);
 

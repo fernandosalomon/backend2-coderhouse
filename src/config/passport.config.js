@@ -9,7 +9,7 @@ import { userRepository } from "../repositories/index.js";
 import { isValidEmail } from "../utils/validators.js";
 
 const getToken = (req) => {
- return req.cookies?.currentUser || null;
+  return req.cookies?.currentUser || null;
 };
 
 export const initPassport = async () => {
@@ -51,7 +51,6 @@ export const initPassport = async () => {
           if (!isPasswordValid) {
             return done(new customError("Credenciales Inválidas", 401));
           }
-
           return done(null, new UserDTO(user));
         } catch (error) {
           return done(error);
