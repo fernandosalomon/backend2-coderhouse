@@ -7,7 +7,6 @@ import {
 } from "../controllers/sessions.controller.js";
 import passport from "passport";
 import { customError } from "../utils/customError.js";
-import { customError } from "../utils/customError.js";
 
 const router = Router();
 
