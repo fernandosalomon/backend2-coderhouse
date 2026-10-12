@@ -45,7 +45,7 @@ router.patch(
       next();
     })(req, res, next);
   },
-  authorize("organizer", "admin"),
+  authorize("user", "organizer", "admin"),
   cancelTicket,
 );
 
