@@ -6,7 +6,7 @@ import {
   logoutUser,
 } from "../controllers/sessions.controller.js";
 import passport from "passport";
-import { customError } from "../utils/customError.js";
+import { passportCall } from "../middlewares/passportCall.js";
 
 const router = Router();
 
@@ -22,29 +22,7 @@ router.post(
   login,
 );
 
-router.get(
-  "/current",
-  (req, res, next) => {
-    passport.authenticate(
-      "current",
-      { session: false },
-      (err, user, info) => {
-        if (err) {
-          return next(new customError("No autenticado", 401));
-        }
-
-        if (!user) {
-          return next(new customError("No autenticado", 401));
-        }
-
-        req.user = user;
-        next();
-      },
-    )(req, res, next);
-  },
-  getCurrentUser,
-);
-
+router.get("/current", passportCall("current"), getCurrentUser);
 
 router.post("/logout", logoutUser);
 

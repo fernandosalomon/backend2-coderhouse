@@ -9,108 +9,40 @@ import {
   updateEventStatus,
 } from "../controllers/events.controller.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
-import passport from "passport";
-import { customError } from "../utils/customError.js";
+import { passportCall } from "../middlewares/passportCall.js";
 
 const router = Router();
 
 router.get("/", getEvents);
+
 router.get("/:eid", getEventById);
+
 router.post(
   "/",
-  (req, res, next) => {
-    passport.authenticate("current", { session: false }, (err, user, info) => {
-      if (err) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      if (!user) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
+  passportCall("current"),
   authorize("organizer", "admin"),
   createEvent,
 );
 
 router.put(
   "/:eid",
-  (req, res, next) => {
-    passport.authenticate("current", { session: false }, (err, user, info) => {
-      if (err) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      if (!user) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
+  passportCall("current"),
   authorize("organizer", "admin"),
   updateEvent,
 );
 
 router.patch(
   "/:eid",
-  (req, res, next) => {
-    passport.authenticate("current", { session: false }, (err, user, info) => {
-      if (err) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      if (!user) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
+  passportCall("current"),
   authorize("organizer", "admin"),
   updateEventStatus,
 );
 
-router.post(
-  "/:eid/tickets",
-  (req, res, next) => {
-    passport.authenticate("current", { session: false }, (err, user, info) => {
-      if (err) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      if (!user) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
-  registerToEvent,
-);
+router.post("/:eid/tickets", passportCall("current"), registerToEvent);
 
 router.get(
   "/:eid/tickets",
-  (req, res, next) => {
-    passport.authenticate("current", { session: false }, (err, user, info) => {
-      if (err) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      if (!user) {
-        return next(new customError("No autenticado", 401));
-      }
-
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
+  passportCall("current"),
   authorize("organizer", "admin"),
   listTickets,
 );
