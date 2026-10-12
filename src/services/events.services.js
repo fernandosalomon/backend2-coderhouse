@@ -4,7 +4,7 @@ import { customError } from "../utils/customError.js";
 import { EventDTO } from "../dto/Event.dto.js";
 
 class EventService {
-  getAll = (query) => {
+  getAll = async (query) => {
     const {
       category,
       status,
@@ -58,7 +58,7 @@ class EventService {
       pagination.sort[date] = 1;
     }
 
-    const events = eventRepository.getAll(filters, pagination);
+    const events = await eventRepository.getAll(filters, pagination);
     return events;
   };
 

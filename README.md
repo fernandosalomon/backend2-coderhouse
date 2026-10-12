@@ -413,6 +413,70 @@ La ruta base es `/api/events`.
 Para crear un evento, enviar `title`, `description`, `category`, `date`, `location` y `capacity`; `price` es opcional y vale `0` por defecto. El organizador se asigna al usuario autenticado.
 El rol `organizer` solo puede modificar sus propios eventos; `admin` puede modificar cualquiera.
 
+#### 12.1 Tickets e inscripción
+
+Las rutas de tickets están montadas bajo `/api`. Las rutas de inscripción y consulta de tickets de un evento pertenecen a `/api/events`; la consulta de tickets propios y su cancelación pertenecen a `/api/tickets`.
+
+| Método | Ruta | Autorización | Descripción |
+| --- | --- | --- | --- |
+| `POST` | `/api/events/:eid/tickets` | Requiere autenticación | Inscribe al usuario en el evento. |
+| `GET` | `/api/events/:eid/tickets` | Requiere autenticación y rol `organizer` o `admin` | Lista los tickets del evento; solo su organizador o `admin` debería poder consultarlos. |
+| `GET` | `/api/tickets/my-tickets` | Requiere autenticación; roles `user`, `organizer` o `admin` | Lista los tickets del usuario autenticado. |
+| `PATCH` | `/api/tickets/:tid/cancel` | Requiere autenticación y rol `organizer` o `admin` | Cancela un ticket. |
+
+Para inscribirse, enviar `quantity` en el cuerpo JSON. El campo es opcional y vale `1` si se omite:
+
+```json
+{
+  "quantity": 2
+}
+```
+
+Una inscripción exitosa responde `201` con el ticket creado. La operación falla si el evento no existe (`404`), no está publicado, ya comenzó o fue cancelado, la cantidad no es un número positivo, el usuario ya tiene un ticket activo para ese evento o no quedan suficientes cupos (`400`). Las rutas protegidas responden `401` si falta autenticación y `403` si el rol o los permisos no son suficientes.
+
+**Nota sobre permisos:** el servicio compara el organizador del evento (poblado como objeto) con el ID del usuario. Esa comparación puede denegar con `403` incluso al organizador legítimo; normalizar ambos valores a IDs permite que la regla de propiedad funcione correctamente.
+
+##### Estados de ticket
+
+| Estado | Significado |
+| --- | --- |
+| `pending` | Estado asignado al crear una inscripción. |
+| `confirmed` | Estado activo reconocido por las consultas y el cálculo de cupos. |
+| `cancelled` | Estado asignado al cancelar; deja de ocupar cupo. |
+
+Los tickets `pending` y `confirmed` se consideran activos: no se permite otra inscripción del mismo usuario al mismo evento mientras exista uno de esos estados. La cancelación solo permite cambiar un ticket una vez y no se puede realizar si el evento ya comenzó. Aunque el esquema declara `active` como estado predeterminado, las inscripciones asignan explícitamente `pending`.
+
+##### Flujo de inscripción
+
+1. El usuario autenticado envía `POST /api/events/:eid/tickets` con la cantidad deseada (o sin `quantity` para solicitar una plaza).
+2. El servidor comprueba que el evento exista, esté publicado y no haya comenzado; valida la cantidad y que el usuario no tenga otro ticket `pending` o `confirmed`.
+3. Se calcula la ocupación y, si hay capacidad suficiente, se crea el ticket en estado `pending` con un código de reserva.
+4. Se envía un correo al usuario. Al cancelar, también se envía un aviso de cancelación.
+
+**Nota:** aunque el ticket se crea como `pending`, el asunto y el texto actuales del correo de inscripción dicen que la inscripción fue confirmada. Además, `confirmed` está contemplado como estado activo, pero el flujo documentado en el código no realiza una transición a ese estado.
+
+##### Regla de cupos
+
+La ocupación de un evento es la suma de `quantity` de sus tickets con estado `pending` o `confirmed`. La inscripción se acepta cuando:
+
+```text
+cupos ocupados + cantidad solicitada <= capacidad del evento
+```
+
+Los tickets `cancelled` no se suman; por ello, cancelar una inscripción libera sus plazas.
+
+##### Configuración de correo
+
+El envío de notificaciones usa estas variables SMTP en `.env`:
+
+| Variable | Uso |
+| --- | --- |
+| `MAIL_HOST` | Host del servidor SMTP. |
+| `MAIL_PORT` | Puerto del servidor SMTP. |
+| `MAIL_USER` | Usuario para autenticarse en SMTP. |
+| `MAIL_PASS` | Contraseña SMTP o contraseña de aplicación. |
+| `MAIL_FROM` | Dirección o identidad que figura como remitente. |
+
 ### 13. Autorización
 
 #### 13.1 Sistema de roles
@@ -508,6 +572,11 @@ MONGO_URI=
 JWT_SECRET=
 JWT_EXPIRES_IN=
 COOKIE_SECRET=
+MAIL_HOST=
+MAIL_PORT=
+MAIL_USER=
+MAIL_PASS=
+MAIL_FROM=
 
 ##### Descripción de las variables
 
@@ -517,6 +586,11 @@ COOKIE_SECRET=
 **JWT_SECRET**:Secreto utilizado para firmar y verificar los JWT.
 **JWT_EXPIRES_IN**:Tiempo de expiración de los JWT.
 **COOKIE_SECRET**:Secreto utilizado para firmar y verificar las cookies.
+**MAIL_HOST**: Host del servidor SMTP utilizado para enviar notificaciones de tickets.
+**MAIL_PORT**: Puerto del servidor SMTP.
+**MAIL_USER**: Usuario de autenticación SMTP.
+**MAIL_PASS**: Contraseña SMTP o contraseña de aplicación.
+**MAIL_FROM**: Dirección o identidad utilizada como remitente de los correos.
 
 El repositorio incluye .env.example como plantilla de configuración.
 
@@ -552,34 +626,44 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
 
-### 18. Pre-entrega N.º 6
+### 18. Pre-entrega N.º 7
 
-#### Crear evento con rol user→ 403
+#### Inscripción exitosa → email recibido
 
-![alt text](/public/img/createEvent-roleUser.png)
+![alt text](/public/img/buyTicket.png)
 
-#### Crear evento con fecha pasada → error de validación
+Captura del email:
+![alt text](image.png)
 
-![alt text](/public/img/createEvent-prevDate.png)
+#### Inscripción sin sesión → 401
 
-#### Crear evento con capacity: 0→ error de validación
+![alt text](/public/img/BuyTicket-NoSession.png)
 
-![alt text](/public/img/createEvent-capacity0.png)
+#### Inscripción a evento inexistente → 404
 
-#### organizer modifica evento propio → éxito
-![alt text](/public/img/modifyEvent-organizer.png)
+![alt text](/public/img/buyTicket-EventNotFound.png)
 
-#### organizer modifica evento ajeno → 403
-![alt text](/public/img/modifyEvent-organizerNotOwn.png)
+#### Inscripción a evento cancelado/finalizado → error de negocio
 
-#### admin modifica evento de otro organizador → éxito
-![alt text](/public/img/modifyEvent-admin.png)
+![alt text](/public/img/buyTicket-cancelledEvent.png)
 
-#### Cambiar estado de evento cancelado → error
-![alt text](/public/img/changeStatus-cancelledEvent.png)
+#### Inscripción cuando no hay cupo suficiente → error con mensaje claro
 
-#### Listar con filtros: ?status=published&category=workshop&page=2&limit=5
-![alt text](/public/img/getEventWithFilters.png)
+![alt text](/public/img/buyTicket-NoSeats.png)
 
-#### Consultar evento inexistente → 404
-![alt text](/public/img/GetEventNotExists.png)
+#### Inscripción duplicada activa → error
+
+![alt text](/public/img/buyTicket-Duplicate.png)
+
+#### Cancelación propia → cupo liberado (nueva inscripción por ese cupo funciona)
+
+![alt text](/public/img/cancelTicket.png)
+
+#### Cancelación de ticket ajeno como user→ 403
+![alt text](/public/img/cancelTicket-notOwn.png)
+
+#### GET /api/events/:eid/tickets como user común → 403
+![alt text](/public/img/getTicketsEvent-user.png)
+
+#### GET /api/events/:eid/tickets como organizer de otro evento → 403
+![alt text](/public/img/getTicketsEvent-notOwnEvent.png)
