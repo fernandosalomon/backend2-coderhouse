@@ -4,60 +4,37 @@ import { customError } from "../utils/customError.js";
 import { EventDTO } from "../dto/Event.dto.js";
 
 class EventService {
-  getAllActiveEvents = async (query) => {
-    const {
-      category,
-      status,
-      location,
-      fromDate,
-      toDate,
-      page = 1,
-      limit = 10,
-      sort,
-    } = query;
-
-    const filters = {};
-
-    if (category) {
-      filters.category = category;
+  getEvents = async ({ pagination, rawFilters }) => {
+    const filterQuery = {};
+    
+    if (rawFilters.category) {
+      filterQuery.category = rawFilters.category;
+    }
+  
+    if (rawFilters.status) {
+      filterQuery.status = rawFilters.status;
+    }
+  
+    if (rawFilters.title) {
+      filterQuery.title = { $regex: rawFilters.title.trim(), $options: "i" };
     }
 
-    if (status) {
-      filters.status = status;
+    if (rawFilters.location) {
+      filterQuery.location = { $regex: rawFilters.location.trim(), $options: "i"};
     }
 
-    if (location) {
-      filters.location = {
-        $regex: location,
-        $options: "i",
-      };
-    }
-
-    if (fromDate || toDate) {
-      filters.date = {};
+    if (rawFilters.fromDate || rawFilters.toDate) {
+      filterQuery.date = {};
       if (fromDate) {
-        filters.date.$gte = new Date(fromDate);
+        filterQuery.date.$gte = new Date(fromDate);
       }
       if (toDate) {
-        filters.date.$lte = new Date(toDate);
+        filterQuery.date.$lte = new Date(toDate);
       }
     }
+  
+    return await eventRepository.getPaginatedEvents(filterQuery, pagination);
 
-    const options = {};
-
-    const pageNumber = Number(page);
-    const limitNumber = Number(limit);
-    options.limit = limitNumber;
-
-    const skip = (pageNumber - 1) * limitNumber;
-    options.skip = skip;
-
-    if (sort) {
-      options.sort = sort;
-    }
-
-    const events = await eventRepository.getEventsByFilters(filters, options);
-    return events;
   };
 
   getById = async (eid) => {

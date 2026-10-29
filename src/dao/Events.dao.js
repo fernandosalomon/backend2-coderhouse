@@ -1,20 +1,18 @@
 import EventModel from "../models/Event.js";
 
 export default class EventsDAO {
-  async getBy(params) {
-    return EventModel.findOne(params).populate("organizer").lean();
-  }
-
-  async getByFilters(filters, options = {}) {
-    const { sort = "date", skip = 0, limit = 10 } = options;
-    return EventModel.paginate(filters, {
-      sort,
-      skip,
+  async getAll(filterQuery = {}, paginationOptions = {}) {
+    const { page = 1, limit = 10, sort = { createdAt: -1 } } = paginationOptions;
+    
+    return await EventModel.paginate(filterQuery, {
+      page,
       limit,
+      sort,
       populate: {
         path: "organizer",
         select: "first_name last_name email",
       },
+      lean: true
     });
   }
 

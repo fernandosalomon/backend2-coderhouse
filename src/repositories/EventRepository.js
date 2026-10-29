@@ -2,14 +2,15 @@ export default class EventRepository {
   constructor(dao) {
     this.dao = dao;
   }
+  
+  async getPaginatedEvents(filterQuery, paginationOptions) {
+    return await this.dao.getAll(filterQuery, paginationOptions);
+  }
 
   async getEventById(id) {
-    return this.dao.getBy({ _id: id });
+    return this.dao.getAll({ _id: id });
   }
 
-  async getEventsByFilters(filters, options) {
-    return this.dao.getByFilters(filters, options);
-  }
 
   async countEvents(filters) {
     return this.dao.count(filters);

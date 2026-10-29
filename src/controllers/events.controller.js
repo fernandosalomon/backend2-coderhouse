@@ -2,12 +2,14 @@ import { EventDTO } from "../dto/Event.dto.js";
 import { TicketDTO } from "../dto/Ticket.dto.js";
 import { eventService } from "../services/events.services.js";
 import ticketService from "../services/tickets.services.js";
+import { parsePaginationParams } from "../utils/pagination.util.js";
 
 export const getEvents = async (req, res) => {
-  const filters = req.query;
-
   try {
-    const events = await eventService.getAllActiveEvents(filters);
+
+    const { pagination, rawFilters } = parsePaginationParams(req.query);
+
+    const events = await eventService.getEvents({ pagination, rawFilters });
 
     res.status(200).json({
       status: "success",
