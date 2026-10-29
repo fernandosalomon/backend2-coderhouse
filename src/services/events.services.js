@@ -98,7 +98,8 @@ class EventService {
     return new EventDTO(newEvent);
   };
 
-  update = async (eid, updateData, user) => { //TODO: Check if capacity is not full
+  update = async (eid, updateData, user) => {
+    //TODO: Check if capacity is not full
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
@@ -178,6 +179,7 @@ class EventService {
   };
 
   updateStatus = async (eid, newStatus, user) => {
+    const STATUS_LIST = ["draft", "published", "cancelled", "finished"];
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
@@ -194,22 +196,27 @@ class EventService {
       );
     }
 
-    if (event.date <= new Date() || event.status === "cancelled") {
+    if (!STATUS_LIST.includes(newStatus.trim().toLowerCase())) {
+      throw new customError(
+        "El estado de un evento solo puede ser: 'draft', 'published', 'cancelled' o 'finished'",
+        400,
+      );
+    }
+
+    if (
+      event.date <= new Date() ||
+      event.status.toLowerCase() === "cancelled" ||
+      event.status.toLowerCase() === "finished"
+    ) {
       throw new customError(
         "No se puede cambiar el estado de eventos cancelados o finalizados",
         400,
       );
     }
-
-    if (newStatus === "cancelled" && event.date <= new Date()) {
-      throw new customError(
-        "No se puede cancelar un evento que ya finalizó",
-        400,
-      );
-    }
+  
 
     const updatedEvent = await eventRepository.updateEvent(eid, {
-      status: newStatus,
+      status: newStatus.trim().toLowerCase(),
     });
     return new EventDTO(updatedEvent);
   };
