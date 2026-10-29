@@ -21,9 +21,10 @@ export default class EventsDAO {
   }
 
   async getOne(query) {
-    return await EventModel.findOne(query)
-      .populate("organizer", "first_name last_name email")
-      .lean();
+    return await EventModel.findOne(query).populate(
+      "organizer",
+      "first_name last_name email",
+    );
   }
 
   async save(doc) {

@@ -10,8 +10,8 @@ export default class TicketsDAO {
 
   async save(doc) {
     const ticket = await TicketModel.create(doc);
-    ticket.populate("user");
-    ticket.populate("event");
+    await ticket.populate("user");
+    await ticket.populate("event");
     return ticket;
   }
 

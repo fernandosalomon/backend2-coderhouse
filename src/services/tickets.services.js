@@ -49,24 +49,28 @@ class TicketService {
         409,
       );
     }
+    
+    try {
+      const ticket = await ticketRepository.createTicket({
+        event: eid,
+        user: uid,
+        quantity: seats,
+        reservationCode: createReservationCode(),
+        status: "pending",
+      });
 
-    const ticket = await ticketRepository.createTicket({
-      event: eid,
-      user: uid,
-      quantity: seats,
-      reservationCode: createReservationCode(),
-      status: "pending",
-    });
+      const user = await userRepository.getUserById(uid);
 
-    const user = await userRepository.getUserById(uid);
+      await sendMail({
+        to: user.email,
+        subject: `Inscripción a ${event.title}`,
+        text: `Hola ${user.first_name}, tu inscripción al evento ${event.title} ha sido registrada. En breve confirmaremos tu inscripción. El código de reserva es ${ticket.reservationCode}.`,
+      });
 
-    await sendMail({
-      to: user.email,
-      subject: `Inscripción a ${event.title} confirmada`,
-      text: `Hola ${user.first_name}, tu inscripción al evento ${event.title} ha sido confirmada. El código de reserva es ${ticket.reservationCode}.`,
-    });
-
-    return new TicketDTO(ticket);
+      return new TicketDTO(ticket);
+    } catch (error) {
+      throw new customError("Fallo la creación del ticket", 500);
+    }
   }
 
   async ownTickets(user) {

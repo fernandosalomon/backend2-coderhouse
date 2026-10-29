@@ -36,6 +36,8 @@ class EventService {
       }
     }
 
+    filterQuery.status = "published";
+
     return await eventRepository.getPaginatedEvents(filterQuery, pagination);
   };
 
@@ -213,7 +215,6 @@ class EventService {
         400,
       );
     }
-  
 
     const updatedEvent = await eventRepository.updateEvent(eid, {
       status: newStatus.trim().toLowerCase(),
