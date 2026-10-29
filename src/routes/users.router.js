@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { authorize } from "../middlewares/authorize.middleware.js";
 import { getAllUsers } from "../controllers/users.controller.js";
-import passport from "passport";
-
 import { passportCall } from "../middlewares/passportCall.js";
 
 const router = Router();

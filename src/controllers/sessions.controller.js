@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
-import { JWT_EXPIRES_IN, JWT_SECRET, NODE_ENV } from "../config/env.config.js";
+import { config } from "../config/env.config.js";
 
 export const register = async (req, res) => {
-    const user = req.user;
-    res.status(201).json({ status: "success", payload: user });
+  const user = req.user;
+  res.status(201).json({ status: "success", payload: user });
 };
 
 export const login = async (req, res) => {
@@ -15,15 +15,15 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn },
     );
 
     res.cookie("currentUser", token, {
       httpOnly: true,
       sameSite: "lax",
       maxAge: 3600000,
-      secure: NODE_ENV == "PRODUCTION" ? true : false,
+      secure: config.app.environment == "PRODUCTION" ? true : false,
     });
 
     res.status(200).json({ status: "success", message: "Login correcto" });

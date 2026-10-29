@@ -1,7 +1,7 @@
 import passport from "passport";
 import passportJWT from "passport-jwt";
 import local from "passport-local";
-import { JWT_SECRET } from "./env.config.js";
+import { config } from "./env.config.js";
 import { checkPassword, hashPassword } from "../utils/hash.js";
 import UserDTO from "../dto/User.dto.js";
 import { customError } from "../utils/customError.js";
@@ -17,7 +17,7 @@ export const initPassport = async () => {
     "current",
     new passportJWT.Strategy(
       {
-        secretOrKey: JWT_SECRET,
+        secretOrKey: config.jwt.secret,
         jwtFromRequest: passportJWT.ExtractJwt.fromExtractors([getToken]),
       },
       async (payload, done) => {
@@ -43,13 +43,13 @@ export const initPassport = async () => {
           );
 
           if (user == null) {
-            return done(new customError("Credenciales Inválidas", 401));
+            return done(new customError("Credenciales inválidas", 401));
           }
 
           const isPasswordValid = checkPassword(password, user.password);
 
           if (!isPasswordValid) {
-            return done(new customError("Credenciales Inválidas", 401));
+            return done(new customError("Credenciales inválidas", 401));
           }
           return done(null, new UserDTO(user));
         } catch (error) {

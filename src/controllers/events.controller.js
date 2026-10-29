@@ -108,7 +108,7 @@ export const listTickets = async (req, res) => {
   const options = req.query;
   try {
     const tickets = await ticketService.listByEvent(eid, user, options);
-    console.log(tickets);
+
     res.status(200).json({
       status: "success",
       payload: {

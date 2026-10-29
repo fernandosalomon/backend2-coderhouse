@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
-import { MONGO_URI } from "./env.config.js"
+import { config } from "./env.config.js";
 
 export const connectDB = async () => {
   try {
-    const mongoUri = MONGO_URI;
+    const mongoUri = config.db.mongoUri;
     await mongoose.connect(mongoUri);
     console.log("Conectado a la base de datos");
   } catch (error) {

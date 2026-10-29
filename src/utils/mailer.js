@@ -1,15 +1,9 @@
 import nodemailer from "nodemailer";
-import {
-  MAIL_FROM,
-  MAIL_HOST,
-  MAIL_PASS,
-  MAIL_PORT,
-  MAIL_USER,
-} from "../config/env.config.js";
+import { config } from "../config/env.config.js";
 
 export const sendMail = async ({ to, subject, text }) => {
   return transport.sendMail({
-    from: MAIL_FROM,
+    from: config.mail.from,
     to,
     subject,
     text,
@@ -17,10 +11,10 @@ export const sendMail = async ({ to, subject, text }) => {
 };
 
 const transport = nodemailer.createTransport({
-  host: MAIL_HOST,
-  port: MAIL_PORT,
+  host: config.mail.host,
+  port: config.mail.port,
   auth: {
-    user: MAIL_USER,
-    pass: MAIL_PASS,
+    user: config.mail.user,
+    pass: config.mail.pass,
   },
 });
