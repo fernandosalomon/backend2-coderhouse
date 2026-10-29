@@ -6,21 +6,24 @@ import { EventDTO } from "../dto/Event.dto.js";
 class EventService {
   getEvents = async ({ pagination, rawFilters }) => {
     const filterQuery = {};
-    
+
     if (rawFilters.category) {
       filterQuery.category = rawFilters.category;
     }
-  
+
     if (rawFilters.status) {
       filterQuery.status = rawFilters.status;
     }
-  
+
     if (rawFilters.title) {
       filterQuery.title = { $regex: rawFilters.title.trim(), $options: "i" };
     }
 
     if (rawFilters.location) {
-      filterQuery.location = { $regex: rawFilters.location.trim(), $options: "i"};
+      filterQuery.location = {
+        $regex: rawFilters.location.trim(),
+        $options: "i",
+      };
     }
 
     if (rawFilters.fromDate || rawFilters.toDate) {
@@ -32,9 +35,8 @@ class EventService {
         filterQuery.date.$lte = new Date(toDate);
       }
     }
-  
-    return await eventRepository.getPaginatedEvents(filterQuery, pagination);
 
+    return await eventRepository.getPaginatedEvents(filterQuery, pagination);
   };
 
   getById = async (eid) => {
@@ -96,7 +98,7 @@ class EventService {
     return new EventDTO(newEvent);
   };
 
-  update = async (eid, updateData, user) => {
+  update = async (eid, updateData, user) => { //TODO: Check if capacity is not full
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
@@ -120,8 +122,25 @@ class EventService {
       );
     }
 
-    if (updateData.date !== undefined) {
-      const newDate = new Date(updateData.date);
+    const { title, description, category, date, location, capacity, price } =
+      updateData;
+
+    const newEventData = {};
+
+    if (title) {
+      newEventData.title = title.trim();
+    }
+
+    if (description) {
+      newEventData.description = description.trim();
+    }
+
+    if (category) {
+      newEventData.category = category.trim();
+    }
+
+    if (date !== undefined) {
+      const newDate = new Date(date);
 
       if (Number.isNaN(newDate.getTime())) {
         throw new customError("La fecha proporcionada no es válida", 400);
@@ -131,22 +150,30 @@ class EventService {
         throw new customError("La fecha del evento debe ser futura", 400);
       }
 
-      updateData.date = newDate;
+      newEventData.date = newDate;
     }
 
-    if (updateData.capacity !== undefined) {
-      if (updateData.capacity <= 0) {
+    if (location) {
+      newEventData.location = location.trim();
+    }
+
+    if (capacity !== undefined) {
+      if (capacity <= 0) {
         throw new customError("La capacidad debe ser mayor a 0", 400);
+      } else {
+        newEventData.capacity = capacity;
       }
     }
 
-    if (updateData.price !== undefined) {
-      if (updateData.price < 0) {
+    if (price !== undefined) {
+      if (price < 0) {
         throw new customError("El precio no puede ser negativo");
+      } else {
+        newEventData.price = price;
       }
     }
 
-    const updatedEvent = await eventRepository.updateEvent(eid, updateData);
+    const updatedEvent = await eventRepository.updateEvent(eid, newEventData);
     return new EventDTO(updatedEvent);
   };
 
