@@ -32,7 +32,7 @@ router.put(
 );
 
 router.patch(
-  "/:eid",
+  "/:eid/status",
   passportCall("current"),
   authorize("organizer", "admin"),
   updateEventStatus,

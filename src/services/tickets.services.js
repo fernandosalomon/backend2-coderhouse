@@ -37,7 +37,7 @@ class TicketService {
     if (active !== null) {
       throw new customError(
         "Ya tienes un ticket confirmado o pendiente para este evento",
-        400,
+        409,
       );
     }
 
@@ -46,7 +46,7 @@ class TicketService {
     if (occupied + seats > event.capacity) {
       throw new customError(
         "No hay mas cupos disponibles para este evento",
-        400,
+        409,
       );
     }
 

@@ -103,7 +103,7 @@ class EventService {
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
-      throw new customError("Evento no encontrado", 400);
+      throw new customError("Evento no encontrado", 404);
     }
 
     if (
@@ -183,7 +183,7 @@ class EventService {
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
-      throw new customError("Evento no encontrado", 400);
+      throw new customError("Evento no encontrado", 404);
     }
 
     if (
@@ -192,7 +192,7 @@ class EventService {
     ) {
       throw new customError(
         "No tienes permisos para modificar este evento",
-        401,
+        403,
       );
     }
 
