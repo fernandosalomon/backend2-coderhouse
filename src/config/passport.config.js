@@ -46,7 +46,7 @@ export const initPassport = async () => {
             return done(new customError("Credenciales inválidas", 401));
           }
 
-          const isPasswordValid = checkPassword(password, user.password);
+          const isPasswordValid = await checkPassword(password, user.password);
 
           if (!isPasswordValid) {
             return done(new customError("Credenciales inválidas", 401));
@@ -99,7 +99,7 @@ export const initPassport = async () => {
             first_name,
             last_name,
             email: username.toLowerCase().trim(),
-            password: hashPassword(password),
+            password: await hashPassword(password),
             role: "user",
           });
 
