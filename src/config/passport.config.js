@@ -22,6 +22,18 @@ export const initPassport = async () => {
       },
       async (payload, done) => {
         try {
+          const userId = payload.id || payload.user?._id || payload.user?.id;
+          if (!userId) {
+            return done(new customError("Token inválido o malformado", 401));
+          }
+
+          const user = await userRepository.getUserById(userId);
+          if (!user) {
+            return done(
+              new customError("Usuario no encontrado o dado de baja", 401),
+            );
+          }
+
           return done(null, payload);
         } catch (error) {
           return done(error);

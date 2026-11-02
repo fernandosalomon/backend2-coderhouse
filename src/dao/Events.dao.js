@@ -48,7 +48,7 @@ export default class EventsDAO {
     return await EventModel.updateMany(
       {
         date: { $lt: new Date() },
-        status: { $ne: "finished" },
+        status: { $nin: ["finished", "cancelled"] },
       },
       {
         $set: { status: "finished" },
