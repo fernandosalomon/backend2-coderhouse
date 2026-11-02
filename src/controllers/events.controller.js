@@ -6,7 +6,6 @@ import { parsePaginationParams } from "../utils/pagination.util.js";
 
 export const getEvents = async (req, res) => {
   try {
-
     const { pagination, rawFilters } = parsePaginationParams(req.query);
 
     const events = await eventService.getEvents({ pagination, rawFilters });
@@ -14,7 +13,7 @@ export const getEvents = async (req, res) => {
     res.status(200).json({
       status: "success",
       payload: {
-        data: events.docs.map((e) => new EventDTO(e)),
+        data: events.docs.map((e) => new EventDTO(e).public()),
         page: events.page,
         limit: events.limit,
         total: events.totalDocs,

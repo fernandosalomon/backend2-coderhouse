@@ -11,6 +11,24 @@ export class EventDTO {
     this.price = event?.price;
     this.location = event?.location?.trim();
     this.status = event?.status;
-    this.organizer = new UserDTO(event?.organizer).publicListDTO();
+    this.organizer = new UserDTO(event?.organizer);
+  }
+
+  public() {
+    return {
+      id: this.id,
+      title: this.title,
+      description: this.description,
+      category: this.category,
+      date: this.date,
+      capacity: this.capacity,
+      price: this.price,
+      location: this.location,
+      status: this.status,
+      organizer: {
+        first_name: this.organizer.first_name,
+        last_name: this.organizer.last_name,
+      },
+    };
   }
 }
