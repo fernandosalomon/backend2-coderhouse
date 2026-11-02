@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { eventRepository } from "../repositories/index.js";
+import { eventRepository, ticketRepository } from "../repositories/index.js";
 import { customError } from "../utils/customError.js";
 import { EventDTO } from "../dto/Event.dto.js";
 
@@ -104,8 +104,6 @@ class EventService {
   };
 
   update = async (eid, updateData, user) => {
-    //TODO: Check if capacity is not full
-
     await eventRepository.finishExpiredEvents();
     const event = await eventRepository.getEventById(eid);
 
@@ -166,11 +164,20 @@ class EventService {
     }
 
     if (capacity !== undefined) {
+      const occupancy = await ticketRepository.getReservedQuantity(event._id);
+
       if (capacity <= 0) {
         throw new customError("La capacidad debe ser mayor a 0", 400);
-      } else {
-        newEventData.capacity = capacity;
       }
+
+      if (capacity < occupancy) {
+        throw new customError(
+          "La capacidad no puede ser menor al cupo reservado",
+          400,
+        );
+      }
+
+      newEventData.capacity = capacity;
     }
 
     if (price !== undefined) {
