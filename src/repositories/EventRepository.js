@@ -22,4 +22,8 @@ export default class EventRepository {
   async updateEvent(id, data) {
     return this.dao.update(id, data);
   }
+
+  async finishExpiredEvents() {
+    return this.dao.finishExpired();
+  }
 }

@@ -38,10 +38,13 @@ class EventService {
 
     filterQuery.status = "published";
 
+    await eventRepository.finishExpiredEvents();
+
     return await eventRepository.getPaginatedEvents(filterQuery, pagination);
   };
 
   getById = async (eid) => {
+    await eventRepository.finishExpiredEvents();
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
@@ -102,6 +105,8 @@ class EventService {
 
   update = async (eid, updateData, user) => {
     //TODO: Check if capacity is not full
+
+    await eventRepository.finishExpiredEvents();
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {
@@ -182,6 +187,8 @@ class EventService {
 
   updateStatus = async (eid, newStatus, user) => {
     const STATUS_LIST = ["draft", "published", "cancelled", "finished"];
+
+    await eventRepository.finishExpiredEvents();
     const event = await eventRepository.getEventById(eid);
 
     if (!event) {

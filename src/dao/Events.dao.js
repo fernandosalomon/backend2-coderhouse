@@ -43,4 +43,16 @@ export default class EventsDAO {
   async count(filters) {
     return EventModel.countDocuments(filters);
   }
+
+  async finishExpired() {
+    return await EventModel.updateMany(
+      {
+        date: { $lt: new Date() },
+        status: { $ne: "finished" },
+      },
+      {
+        $set: { status: "finished" },
+      },
+    );
+  }
 }
