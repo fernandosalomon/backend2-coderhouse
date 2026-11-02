@@ -45,11 +45,12 @@ export const getCurrentUser = (req, res) => {
 };
 
 export const logoutUser = (req, res) => {
-  if (!req.cookies.currentUser) {
-    return res
-      .status(400)
-      .json({ status: "error", message: "No user to logout" });
-  }
-  res.clearCookie("currentUser");
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  };
+
+  res.clearCookie("currentUser", cookieOptions);
   res.status(200).json({ status: "success", message: "Sesión cerrada" });
 };
