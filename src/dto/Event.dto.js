@@ -5,11 +5,12 @@ export class EventDTO {
     this.id = event?.id;
     this.title = event?.title.trim();
     this.description = event?.description?.trim();
+    this.category = event?.category;
     this.date = event?.date;
     this.capacity = event?.capacity;
     this.price = event?.price;
     this.location = event?.location?.trim();
     this.status = event?.status;
-    this.organizer = new UserDTO(event?.organizer);
+    this.organizer = new UserDTO(event?.organizer).publicListDTO();
   }
 }
