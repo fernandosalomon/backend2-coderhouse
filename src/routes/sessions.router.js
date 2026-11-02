@@ -5,22 +5,13 @@ import {
   getCurrentUser,
   logoutUser,
 } from "../controllers/sessions.controller.js";
-import passport from "passport";
 import { passportCall } from "../middlewares/passportCall.js";
 
 const router = Router();
 
-router.post(
-  "/register",
-  passport.authenticate("register", { session: false }),
-  register,
-);
+router.post("/register", passportCall("register"), register);
 
-router.post(
-  "/login",
-  passport.authenticate("login", { session: false }),
-  login,
-);
+router.post("/login", passportCall("login"), login);
 
 router.get("/current", passportCall("current"), getCurrentUser);
 
