@@ -91,7 +91,11 @@ export const registerToEvent = async (req, res) => {
   const eid = req.params.eid;
   const { quantity } = req.body;
   try {
-    const registration = await ticketService.register(eid, user.id, quantity);
+    const registration = await ticketService.purchaseTicket(
+      eid,
+      user.id,
+      quantity,
+    );
     res.status(201).json({ status: "success", payload: registration });
   } catch (error) {
     return res.status(error.statusCode || 500).json({

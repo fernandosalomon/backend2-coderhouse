@@ -49,7 +49,7 @@ class TicketService {
         409,
       );
     }
-    
+
     try {
       const ticket = await ticketRepository.createTicket({
         event: eid,
@@ -143,6 +143,84 @@ class TicketService {
   async occupiedSeats(eid) {
     const tickets = await ticketRepository.getReservedQuantity(eid);
     return tickets;
+  }
+
+  async purchaseTicket({ eid, uid, quantity = 1 }) {
+    const seats = Number(quantity);
+
+    if (!Number.isFinite(seats) || seats <= 0) {
+      throw new customError("La cantidad de asientos debe ser mayor a 0", 400);
+    }
+
+    const event = await eventRepository.getEventById(eid);
+
+    if (!event) {
+      throw new customError("Evento no encontrado", 404);
+    }
+
+    if (new Date(event.date) <= new Date() || event.status === "cancelled") {
+      throw new customError(
+        "No es posible inscribirse a un evento finalizado o cancelado",
+        400,
+      );
+    }
+
+    if (event.status !== "published") {
+      throw new customError("El evento no se encuentra publicado", 400);
+    }
+
+    const active = await ticketRepository.getTicketByUserAndEvent(uid, eid);
+    if (active !== null) {
+      throw new customError(
+        "Ya tienes un ticket confirmado o pendiente para este evento",
+        409,
+      );
+    }
+
+    const updatedEvent = await eventRepository.decrementSeats(eid, seats);
+
+    if (!updatedEvent) {
+      throw new customError(
+        "No hay más cupos disponibles para este evento",
+        409,
+      );
+    }
+
+    let ticket = null;
+
+    try {
+      ticket = await ticketRepository.createTicket({
+        event: eid,
+        user: uid,
+        quantity: seats,
+        reservationCode: createReservationCode(),
+        status: "pending",
+      });
+    } catch (error) {
+      await eventRepository.restoreSeats(eid, seats);
+      throw new customError(
+        "Ocurrió un error al generar el ticket. Se restauraron los cupos.",
+        500,
+      );
+    }
+
+    try {
+      const user = await userRepository.getUserById(uid);
+      if (user && user.email) {
+        await sendMail({
+          to: user.email,
+          subject: `Inscripción a ${event.title}`,
+          text: `Hola ${user.first_name}, tu inscripción al evento ${event.title} ha sido registrada. En breve confirmaremos tu inscripción. El código de reserva es ${ticket.reservationCode}.`,
+        });
+      }
+    } catch (mailError) {
+      console.error(
+        "Error secundario al enviar email de confirmación:",
+        mailError.message,
+      );
+    }
+
+    return new TicketDTO(ticket);
   }
 }
 

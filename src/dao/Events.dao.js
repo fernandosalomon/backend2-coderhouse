@@ -55,4 +55,27 @@ export default class EventsDAO {
       },
     );
   }
+
+  async decrementAvailableSeats(id, quantity) {
+    return await EventModel.findOneAndUpdate(
+      {
+        _id: id,
+        availableSeats: { $gte: quantity }
+      },
+      {
+        $inc: { availableSeats: -quantity }
+      },
+      { returnDocument: "after" }
+    );
+  }
+  
+  async incrementAvailableSeats(id, quantity) {
+    return await EventModel.findByIdAndUpdate(
+      id,
+      {
+        $inc: { availableSeats: quantity }
+      },
+      { returnDocument: "after" }
+    );
+  }
 }

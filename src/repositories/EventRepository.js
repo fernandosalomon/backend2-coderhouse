@@ -26,4 +26,11 @@ export default class EventRepository {
   async finishExpiredEvents() {
     return this.dao.finishExpired();
   }
+
+  async decrementSeats(id, quantity) {
+    return await this.dao.decrementAvailableSeats(id, quantity);
+  }
+  async restoreSeats(id, quantity) {
+    return await this.dao.incrementAvailableSeats(id, quantity);
+  }
 }

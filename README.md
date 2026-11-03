@@ -33,6 +33,8 @@ La estructura actual del proyecto es:
 
 ```text
 proyecto-eventos/
+├── scripts/
+│ ├── seed.users.js
 ├── src/
 │ ├── app.js
 │ ├── server.js
@@ -81,7 +83,8 @@ proyecto-eventos/
 │ │   ├── customError.js
 │ │   ├── mailer.js
 │ │   ├── validators.js
-│ │   └── hash.js
+│ │   ├── paginations.util.js
+│     └── hash.js
 ├── .env.example
 ├── .gitignore
 ├── package.json
@@ -426,7 +429,8 @@ La configuración de secure permite utilizar HTTP durante el desarrollo local y 
 | `POST`  | `/api/sessions/login`    | Inicia sesión de usuario              | Pública                                                    |
 | `GET`   | `/api/sessions/current`  | Obtiene el usuario autenticado actual | Requiere usuario autenticado                               |
 | `POST`  | `/api/sessions/logout`   | Cierra la sesión del usuario          | Pública / según lógica del controlador                     |
-| `GET`   | `/api/users/`            | Lista todos los                       |                                                            |
+| `GET`   | `/api/users/`            | Lista todos los usuarios              | Requiere usuario autenticado con rol `admin`               |
+| `PATCH` | `/api/users/:uid/changeRole` | Cambia el rol del usuario         | Requiere usuario autenticado con rol `admin`               |
 
 ### 12 Eventos
 
@@ -659,3 +663,18 @@ Para desarrollo, si el proyecto tiene configurado el script correspondiente:
 `npm run dev`
 
 El servidor utilizará el puerto definido en la variable de entorno PORT.
+
+# Flujo completo para la entrega final
+
+## Registro → login → /current → logout → /current devuelve 401
+
+
+## user intenta crear evento → 403
+organizer crea evento → user se inscribe → email recibido → cupo descontado
+user intenta inscribirse nuevamente al mismo evento → error de duplicado
+user intenta inscribirse a evento sin cupo → error claro
+user cancela su ticket → cupo liberado → nueva inscripción funciona
+organizer intenta modificar evento ajeno → 403
+admin modifica evento de otro organizador → éxito
+Respuestas de usuario, evento y ticket no contienen password
+Listado de eventos con ?status=published&page=2&limit=5 devuelve estructura paginada
