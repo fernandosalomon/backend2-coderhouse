@@ -28,10 +28,6 @@ const ticketSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    createdAt: {
-      type: Date,
-      default: null,
-    },
     cancelledAt: {
       type: Date,
       default: null,
