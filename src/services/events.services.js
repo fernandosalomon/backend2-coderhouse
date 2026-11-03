@@ -6,6 +6,7 @@ import { EventDTO } from "../dto/Event.dto.js";
 class EventService {
   getEvents = async ({ pagination, rawFilters }) => {
     const filterQuery = {};
+    
 
     if (rawFilters.category) {
       filterQuery.category = rawFilters.category;
@@ -26,13 +27,13 @@ class EventService {
       };
     }
 
-    if (rawFilters.fromDate || rawFilters.toDate) {
+    if (rawFilters.dateFrom || rawFilters.toDate) {
       filterQuery.date = {};
-      if (fromDate) {
-        filterQuery.date.$gte = new Date(fromDate);
+      if (dateFrom) {
+        filterQuery.date.$gte = new Date(dateFrom);
       }
-      if (toDate) {
-        filterQuery.date.$lte = new Date(toDate);
+      if (dateTo) {
+        filterQuery.date.$lte = new Date(dateTo);
       }
     }
 
