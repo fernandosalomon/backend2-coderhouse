@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import TicketModel from "../models/Ticket.js";
 
 export default class TicketsDAO {
@@ -64,10 +65,11 @@ export default class TicketsDAO {
   }
 
   async getReservedQuantityByEvent(eventId) {
+    const eventObjectId = new mongoose.Types.ObjectId(eventId);
     const result = await TicketModel.aggregate([
       {
         $match: {
-          event: eventId,
+          event: eventObjectId,
           status: { $in: ["confirmed", "pending"] },
         },
       },

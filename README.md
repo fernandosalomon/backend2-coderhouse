@@ -667,14 +667,49 @@ El servidor utilizará el puerto definido en la variable de entorno PORT.
 # Flujo completo para la entrega final
 
 ## Registro → login → /current → logout → /current devuelve 401
+### Registo
+![alt text](/public/img/register_new_user.png)
 
+### Login
+![alt text](/public/img/login_new_user.png)
+
+### /current
+![alt text](/public/img/get_current_user.png)
+
+### Logout
+![alt text](/public/img/logout.png)
+
+### /current devuelve 401
+![alt text](/public/img/current_without_session.png)
 
 ## user intenta crear evento → 403
-organizer crea evento → user se inscribe → email recibido → cupo descontado
-user intenta inscribirse nuevamente al mismo evento → error de duplicado
-user intenta inscribirse a evento sin cupo → error claro
-user cancela su ticket → cupo liberado → nueva inscripción funciona
-organizer intenta modificar evento ajeno → 403
-admin modifica evento de otro organizador → éxito
-Respuestas de usuario, evento y ticket no contienen password
-Listado de eventos con ?status=published&page=2&limit=5 devuelve estructura paginada
+![alt text](/public/img/user_create_event_403.png)
+
+## organizer crea evento → user se inscribe → email recibido
+### Organizer crea evento
+![alt text](/public/img/organizer_create_event.png)
+
+### User se inscribe
+![alt text](/public/img/user_inscription.png)
+
+## user intenta inscribirse nuevamente al mismo evento → error de duplicado
+![alt text](/public/img/double_inscription_409.png)
+
+## user intenta inscribirse a evento sin cupo → error claro
+![alt text](/public/img/no_seats_available.png)
+
+## user cancela su ticket → cupo liberado → nueva inscripción funciona
+### user cancela su ticket
+![alt text](/public/img/cancelled_ticket.png)
+
+### Nueva inscripción funciona
+![alt text](/public/img/buy_tickets_after_cancelled.png)
+
+## organizer intenta modificar evento ajeno → 403
+![alt text](/public/img/update_event_notOwn_403.png)
+
+## admin modifica evento de otro organizador → éxito
+![alt text](/public/img/admin_update_event.png)
+
+## Listado de eventos con ?status=published&page=2&limit=5 devuelve estructura paginada
+![alt text](/public/img/list_events_with_filters.png)

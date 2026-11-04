@@ -145,7 +145,7 @@ class TicketService {
     return tickets;
   }
 
-  async purchaseTicket({ eid, uid, quantity = 1 }) {
+  async purchaseTicket(eid, uid, quantity = 1) {
     const seats = Number(quantity);
 
     if (!Number.isFinite(seats) || seats <= 0) {
@@ -177,11 +177,11 @@ class TicketService {
       );
     }
 
-    const updatedEvent = await eventRepository.decrementSeats(eid, seats);
+    const occupied = await this.occupiedSeats(eid);
 
-    if (!updatedEvent) {
+    if (occupied + seats > event.capacity) {
       throw new customError(
-        "No hay más cupos disponibles para este evento",
+        "No hay mas cupos disponibles para este evento",
         409,
       );
     }
@@ -197,11 +197,7 @@ class TicketService {
         status: "pending",
       });
     } catch (error) {
-      await eventRepository.restoreSeats(eid, seats);
-      throw new customError(
-        "Ocurrió un error al generar el ticket. Se restauraron los cupos.",
-        500,
-      );
+      throw new customError(error, 500);
     }
 
     try {
